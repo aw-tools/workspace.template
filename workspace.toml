@@ -16,13 +16,23 @@ name = "CHANGEME"
 
 # Inner repositories.
 #
-#   path   — checkout location, relative to the workspace root
-#   url    — clone URL
-#   branch — optional; omit to use the remote's default branch
-#   skills — optional; opt this repo into skill propagation.
-#            `true` links every skill the repo exposes; a list links only the
-#            named ones. Default: off — skills are never loaded from a repo
-#            that has not opted in.
+#   path         — checkout location, relative to the workspace root. Must be
+#                  inside the workspace: `..` and absolute paths are rejected.
+#   url          — clone URL
+#   branch       — optional; omit to use the remote's default branch
+#   skills       — optional; opt this repo into skill propagation. `true` links
+#                  every skill the repo exposes; a list links only the named
+#                  ones. Default: off — skills are never loaded from a repo
+#                  that has not opted in.
+#   skill-prefix — optional; link this repo's skills as `<tree>--<skill>`.
+#                  Default: false, because a skill's directory name is the name
+#                  it declares about itself. Turn it on for a repo whose skill
+#                  names are likely to collide.
+#
+# Skills are discovered in `.claude/skills/`, and in `public/` and `private/`
+# for a repo dedicated to skills. Precedence: workspace-local `.skills/` first,
+# then member repos in the order listed below. First claim wins; every loser is
+# reported, never silently dropped.
 #
 # [[repo]]
 # path = "service-api"
@@ -33,8 +43,12 @@ name = "CHANGEME"
 # path = "service-web"
 # url = "git@github.com:example/service-web.git"
 # skills = true
+# skill-prefix = true
+#
+# The shared skills repository is an ordinary member repo that happens to
+# contain only skills.
 #
 # [[repo]]
-# path = "../skills"
+# path = "skills"
 # url = "git@github.com:example/skills.git"
 # skills = ["code-review", "release"]

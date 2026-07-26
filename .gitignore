@@ -14,15 +14,24 @@
 !AGENTS.md
 !CLAUDE.md
 !README.md
+!garden.yaml
 !workspace.toml
 
 # Workspace layer — directories
 !.claude/
 !.claude/**
+!.agents/
+!.agents/**
+!.skills/
+!.skills/**
 !bin/
 !bin/**
 !context/
 !context/**
+
+# Machine-generated garden trees, derived wholesale from workspace.toml by
+# `aw bootstrap`. Never tracked — the manifest is the single source of truth.
+.aw/
 
 # Scratch directory: tracked as an empty marker only.
 !tmp/
