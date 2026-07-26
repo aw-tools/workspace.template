@@ -22,6 +22,8 @@
 !workspace.toml
 
 # Workspace layer — directories
+!.github/
+!.github/**
 !.githooks/
 !.githooks/**
 !.claude/

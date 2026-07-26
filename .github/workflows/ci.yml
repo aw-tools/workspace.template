@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install dprint
+        run: |
+          curl -fsSL https://dprint.dev/install.sh | sh -s 0.55.2
+          echo "$HOME/.dprint/bin" >> "$GITHUB_PATH"
+
+      - name: Check formatting
+        run: dprint check
+
+      - name: Check shell scripts
+        run: shellcheck bin/bootstrap bin/install-hooks .githooks/pre-commit
+
+      - name: Validate template contract
+        run: |
+          test -f .gitignore
+          grep -Fxq '*' .gitignore
+          test -f workspace.toml
