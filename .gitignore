@@ -14,6 +14,7 @@
 !.seedignore
 !AGENTS.md
 !CLAUDE.md
+!CONTRACT.md
 !README.md
 !garden.yaml
 !workspace.toml
