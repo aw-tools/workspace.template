@@ -11,6 +11,7 @@
 
 # Workspace layer — files
 !.gitignore
+!.seedignore
 !AGENTS.md
 !CLAUDE.md
 !README.md
