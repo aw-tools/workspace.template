@@ -12,14 +12,18 @@
 # Workspace layer — files
 !.gitignore
 !.seedignore
+!.editorconfig
 !AGENTS.md
 !CLAUDE.md
 !CONTRACT.md
 !README.md
+!dprint.json
 !garden.yaml
 !workspace.toml
 
 # Workspace layer — directories
+!.githooks/
+!.githooks/**
 !.claude/
 !.claude/**
 !.agents/
