@@ -1,0 +1,77 @@
+# Artefact registry — machine authority.
+#
+# Read by bin/lint-artefacts. The prose companion (purpose per kind, templates)
+# is artefacts.md. This file is the single source of truth for classes, their
+# status machines, the kind -> class / home / naming mapping, and the engagement
+# register. The prose file references it and never embeds a copy.
+#
+# Layout rule (topic-first): standing and binding kinds sit directly in their
+# home under uppercase names; episodic and ephemeral kinds live one topic
+# directory below theirs as <kind>-<slug>.md. The lint derives this from the
+# class, so it is not repeated per kind.
+#
+# The engagement register below ships empty. Add an [engagements.<name>] entry
+# the first time you open an engagement directory under context/engagements/.
+
+[class.standing]
+statuses = ["live", "retired"]
+
+[class.binding]
+statuses = ["active", "superseded"]
+
+[class.episodic]
+statuses = ["open", "closed", "compacted"]
+
+[class.ephemeral]
+statuses = ["open", "graduated", "expired"]
+
+[kind.state]
+class = "standing"
+home = "context"
+naming = "STATE.md (singleton)"
+
+[kind.doctrine]
+class = "standing"
+home = "context"
+naming = "<TOPIC>.md (uppercase)"
+
+[kind.decision]
+class = "binding"
+home = "context"
+naming = "DECISIONS.md (single append-only register; entries numbered, never renumbered)"
+
+[kind.spec]
+class = "episodic"
+home = "context/engagements"
+naming = "<engagement>/spec-<slug>.md"
+
+[kind.plan]
+class = "episodic"
+home = "context/engagements"
+naming = "<engagement>/plan-<slug>.md"
+
+[kind.ledger]
+class = "episodic"
+home = "context/engagements"
+naming = "<engagement>/ledger-<slug>.md"
+
+[kind.handover]
+class = "ephemeral"
+home = "context/engagements"
+naming = "<engagement>/handover-NN-<slug>.md"
+
+[kind.report]
+class = "ephemeral"
+home = "context/engagements"
+naming = "<engagement>/report-NN-<slug>.md"
+
+[kind.probe]
+class = "ephemeral"
+home = "context/engagements"
+naming = "<engagement>/probe-<slug>.md"
+
+# Engagement register — empty on a fresh workspace. One entry per engagement:
+#
+# [engagements.<name>]
+# status = "open"      # open | closed | compacted
+# depends-on = []      # names of engagements this one depends on

@@ -26,7 +26,10 @@ jobs:
         run: dprint check
 
       - name: Check shell scripts
-        run: shellcheck bin/bootstrap bin/install-hooks .githooks/pre-commit
+        run: shellcheck bin/bootstrap bin/install-hooks bin/lint-artefacts .githooks/pre-commit
+
+      - name: Lint artefacts
+        run: bin/lint-artefacts --all
 
       - name: Validate template contract
         run: |
