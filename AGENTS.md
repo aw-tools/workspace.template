@@ -97,6 +97,10 @@ unformatted commits. If it blocks, run `dprint fmt` and re-commit.
   no copy. Absent one, default conservative — commit, push a feature branch,
   open a draft PR; stop at ready-for-review and merge.
 
+Orchestrated multi-worker engagements are opt-in: adopt a skills repository
+carrying an orchestration kernel skill (the manifest's `skills` opt-in) to
+enable them; a solo workspace never needs it.
+
 ## Project notes
 
 <!-- Fill in: what this workspace is for, scope, people, guardrails. -->
