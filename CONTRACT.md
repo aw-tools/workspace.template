@@ -26,6 +26,16 @@ The rest of the starting layer is guidance rather than an enforced file list:
 - `garden.yaml`, containing only the include for `.aw/trees.yaml`;
 - `tmp/.keep`.
 
+This template also ships the artefact-governance layer, so a materialised
+workspace is governed from birth:
+
+- `bin/lint-artefacts` and its pre-commit step, enforcing the model at commit
+  time;
+- `context/artefacts.toml` (registry, empty engagement register) and
+  `context/artefacts.md` (prose companion);
+- register skeletons `context/STATE.md`, `DECISIONS.md`, `FINDINGS.md`, and
+  `NOTES.md` — headers and entry discipline only, no content.
+
 Custom templates may add other workspace-layer files while retaining the
 enforced minimum.
 

@@ -1,0 +1,167 @@
+#!/bin/sh
+#
+# Artefact frontmatter lint — enforces the artefact model against the registry
+# (context/artefacts.toml). The model's rules and templates are in
+# context/artefacts.md.
+#
+# Usage:
+#   bin/lint-artefacts          lint staged *.md files (pre-commit mode)
+#   bin/lint-artefacts --all    lint every tracked *.md file
+#
+# Checks (blocking): frontmatter present; kind registered; status legal for the
+# kind's class; standing/binding files uppercase directly in their home;
+# episodic/ephemeral files one registered engagement directory below theirs,
+# named <kind>-<slug>.md with the prefix agreeing with frontmatter. Registry
+# checks (both modes): every engagement directory registered, every open
+# engagement present on disk, every depends-on target registered. Non-blocking:
+# lists ephemeral artefacts still open. Zero dependencies beyond POSIX sh, awk,
+# and git — the registry TOML is a deliberately flat subset kept stable by
+# dprint.
+#
+# Exit codes: 0 clean, 1 findings, 2 usage/registry error.
+
+set -u
+
+REGISTRY="context/artefacts.toml"
+ENGAGEMENTS_DIR="context/engagements"
+[ -f "$REGISTRY" ] || { echo "error: $REGISTRY not found (run from the repository root)" >&2; exit 2; }
+
+case "${1:-}" in
+"") FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.md') ;;
+--all) FILES=$(git ls-files -- '*.md') ;;
+*) echo "usage: bin/lint-artefacts [--all]" >&2; exit 2 ;;
+esac
+
+# Flatten the registry into lookup lines:
+#   KC <kind> <class>   KH <kind> <home>   CS <class> <status...>
+#   ES <engagement> <status>   ED <engagement> <dep...>
+TABLE=$(awk '
+    /^\[/ { gsub(/[][ ]/, ""); n = split($0, s, "."); type = s[1]; name = s[2]; next }
+    /^class = / { gsub(/"/, ""); print "KC", name, $3 }
+    /^home = /  { gsub(/"/, ""); print "KH", name, $3 }
+    /^status = / { if (type == "engagements") { gsub(/"/, ""); print "ES", name, $3 } }
+    /^statuses = / {
+        line = $0
+        sub(/^statuses = \[/, "", line); sub(/\]$/, "", line)
+        gsub(/[",]/, "", line)
+        print "CS", name, line
+    }
+    /^depends-on = / {
+        line = $0
+        sub(/^depends-on = \[/, "", line); sub(/\]$/, "", line)
+        gsub(/[",]/, "", line)
+        print "ED", name, line
+    }
+' "$REGISTRY")
+[ -n "$TABLE" ] || { echo "error: could not parse $REGISTRY" >&2; exit 2; }
+
+lookup() { printf '%s\n' "$TABLE" | awk -v t="$1" -v n="$2" '$1==t && $2==n { $1=""; $2=""; sub(/^  /, ""); print; exit }'; }
+
+fm_get() {
+    awk -v key="$2:" '
+        NR == 1 { if ($0 != "---") exit; next }
+        /^---$/ { exit }
+        $1 == key { print $2; exit }
+    ' "$1"
+}
+
+FAIL=0
+OPEN_EPHEMERA=""
+
+for f in $FILES; do
+    case "$(basename "$f")" in README.md | AGENTS.md | CLAUDE.md | CONTRACT.md) continue ;; esac
+    [ -f "$f" ] || continue
+
+    if [ "$(head -n 1 "$f")" != "---" ]; then
+        echo "$f: missing frontmatter"
+        FAIL=1
+        continue
+    fi
+
+    kind=$(fm_get "$f" kind)
+    status=$(fm_get "$f" status)
+
+    if [ -z "$kind" ]; then
+        echo "$f: frontmatter has no 'kind'"
+        FAIL=1
+        continue
+    fi
+    class=$(lookup KC "$kind")
+    if [ -z "$class" ]; then
+        echo "$f: kind '$kind' not in registry"
+        FAIL=1
+        continue
+    fi
+
+    if [ -z "$status" ]; then
+        echo "$f: frontmatter has no 'status'"
+        FAIL=1
+    else
+        legal=$(lookup CS "$class")
+        case " $legal " in
+        *" $status "*) ;;
+        *)
+            echo "$f: status '$status' illegal for class '$class' (kind '$kind'; legal: $legal)"
+            FAIL=1
+            ;;
+        esac
+    fi
+
+    home=$(lookup KH "$kind")
+    case "$class" in
+    standing | binding)
+        # artefacts.md is the registry's prose companion — lowercase by design
+        # (data and reference, not every-session signage).
+        if [ "$f" != "context/artefacts.md" ]; then
+            expr "$f" : "$home/[A-Z0-9-][A-Z0-9-]*\.md\$" > /dev/null ||
+                { echo "$f: kind '$kind' belongs directly in $home/ under an uppercase name"; FAIL=1; }
+        fi
+        ;;
+    *)
+        if expr "$f" : "$home/[^/][^/]*/[^/][^/]*\.md\$" > /dev/null; then
+            topic=$(printf '%s\n' "$f" | awk -F/ '{ print $(NF-1) }')
+            base=$(basename "$f")
+            if [ -z "$(lookup ES "$topic")" ]; then
+                echo "$f: engagement '$topic' not in registry"
+                FAIL=1
+            fi
+            case "$base" in
+            "$kind"-*) ;;
+            *)
+                echo "$f: filename must carry its kind ('$kind-<slug>.md', got '$base')"
+                FAIL=1
+                ;;
+            esac
+        else
+            echo "$f: kind '$kind' belongs in $home/<engagement>/$kind-<slug>.md"
+            FAIL=1
+        fi
+        ;;
+    esac
+
+    if [ "$class" = "ephemeral" ] && [ "$status" = "open" ]; then
+        OPEN_EPHEMERA="$OPEN_EPHEMERA $f"
+    fi
+done
+
+# Registry-level checks, independent of which files are staged.
+for topic in $(git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 3 { print $3 }' | sort -u); do
+    [ -n "$(lookup ES "$topic")" ] ||
+        { echo "$ENGAGEMENTS_DIR/$topic/: engagement not in registry"; FAIL=1; }
+done
+printf '%s\n' "$TABLE" | awk '$1 == "ES" { print $2, $3 }' | while read -r name estatus; do
+    if [ "$estatus" = "open" ] && [ -z "$(git ls-files "$ENGAGEMENTS_DIR/$name")" ]; then
+        echo "registry: open engagement '$name' has no directory under $ENGAGEMENTS_DIR/"
+    fi
+done | grep . && FAIL=1
+printf '%s\n' "$TABLE" | awk '$1 == "ED" { for (i = 3; i <= NF; i++) print $2, $i }' | while read -r name dep; do
+    [ -n "$(lookup ES "$dep")" ] ||
+        echo "registry: engagement '$name' depends on unregistered '$dep'"
+done | grep . && FAIL=1
+
+if [ -n "$OPEN_EPHEMERA" ]; then
+    echo "warning: ephemeral artefacts still open (graduate or expire when their unit lands):" >&2
+    for f in $OPEN_EPHEMERA; do echo "  $f" >&2; done
+fi
+
+exit $FAIL

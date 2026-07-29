@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-# Pre-commit hook: verify formatting with dprint.
+# Pre-commit hook: verify formatting with dprint, then lint artefact
+# frontmatter against the registry (context/artefacts.toml).
 # Activate with: bin/install-hooks
 
 if ! command -v dprint >/dev/null 2>&1; then
@@ -11,5 +12,11 @@ fi
 if ! dprint check; then
     echo ""
     echo "Formatting check failed. Run 'dprint fmt' to fix."
+    exit 1
+fi
+
+if ! bin/lint-artefacts; then
+    echo ""
+    echo "Artefact lint failed. Fix the frontmatter per context/artefacts.toml."
     exit 1
 fi
