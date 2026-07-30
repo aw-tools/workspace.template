@@ -13,7 +13,8 @@
 # episodic/ephemeral files one registered engagement directory below theirs,
 # named <kind>-<slug>.md with the prefix agreeing with frontmatter. Registry
 # checks (both modes): every engagement directory registered, every open
-# engagement present on disk, every depends-on target registered. Non-blocking:
+# engagement present on disk, every depends-on target registered, no closed
+# engagement holding an open episodic artefact. Non-blocking:
 # lists ephemeral artefacts still open. Zero dependencies beyond POSIX sh, awk,
 # and git — the registry TOML is a deliberately flat subset kept stable by
 # dprint.
@@ -157,6 +158,16 @@ done | grep . && FAIL=1
 printf '%s\n' "$TABLE" | awk '$1 == "ED" { for (i = 3; i <= NF; i++) print $2, $i }' | while read -r name dep; do
     [ -n "$(lookup ES "$dep")" ] ||
         echo "registry: engagement '$name' depends on unregistered '$dep'"
+done | grep . && FAIL=1
+# Closure hygiene: a non-open engagement must hold no open episodic artefact —
+# closing an engagement closes its plans, specs, and ledger.
+printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 != "open" { print $2 }' | while read -r name; do
+    for f in $(git ls-files "$ENGAGEMENTS_DIR/$name"); do
+        case "$f" in *.md) ;; *) continue ;; esac
+        [ "$(lookup KC "$(fm_get "$f" kind)")" = "episodic" ] || continue
+        [ "$(fm_get "$f" status)" = "open" ] &&
+            echo "$f: episodic artefact still 'open' under closed engagement '$name' (close it with the engagement)"
+    done
 done | grep . && FAIL=1
 
 if [ -n "$OPEN_EPHEMERA" ]; then

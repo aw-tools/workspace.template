@@ -74,6 +74,10 @@ templates, `bin/lint-artefacts` enforces both at commit time.
 - Ephemeral artefacts (handovers, reports, probes) nest per engagement;
   **graduation is deletion** — record the residue, delete the file, git is the
   archive.
+- **Closing an engagement closes its episodic artefacts** — when an engagement's
+  registry status leaves `open`, every plan, spec, and ledger in its directory
+  moves to `closed` in the same commit; the lint blocks a closed engagement that
+  still holds an `open` episodic artefact.
 
 ## Formatting
 
