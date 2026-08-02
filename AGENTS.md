@@ -8,6 +8,27 @@ Inner repositories are separate checkouts, invisible to it.
 Read `context/STATE.md` first — it is the single artefact that resumes a cold
 session, then read what it points to.
 
+This checkout may be one of several, and other sessions push to the same
+remotes. A stale read is indistinguishable from a current one, so refresh before
+relying on what you read:
+
+- **At session start** — fetch the workspace and every member repository, then
+  fast-forward the workspace before reading `STATE.md`.
+- **Before editing a register** (`STATE.md`, `DECISIONS.md`, `FINDINGS.md`, a
+  ledger) — fetch the workspace, fast-forward, and re-read the section you are
+  about to change.
+- **Before asserting a member repository's state** — fetch that repository
+  first. Never quote a branch position, a merge or a CI result from memory.
+- **On resuming after a gap, or when the human has worked elsewhere** — refresh
+  in full.
+
+Never fast-forward over divergence: if the workspace and its remote have both
+moved, stop and say so. If a fetch fails, say so and treat everything that
+follows as possibly stale.
+
+If this workspace opts into a skills corpus carrying `aw-orienting`, that skill
+holds the full procedure.
+
 ## Layout
 
 | Path             | Purpose                                                |
