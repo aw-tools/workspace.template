@@ -67,7 +67,8 @@ part of the work, not a report written afterwards.
   on restart.
 - **Keep it resume-state only:** decisions → `context/DECISIONS.md` (numbered,
   append-only), durable facts → `context/FINDINGS.md`, run detail → the
-  engagement's ledger.
+  engagement's ledger. If the owning topic has no ledger, **open one** —
+  `STATE.md` is not a fallback home for run detail.
 - Record verification verbatim (command + output); rewrite stale sections rather
   than layering corrections.
 
@@ -91,10 +92,18 @@ templates, `bin/lint-artefacts` enforces both at commit time.
 - The root of `context/` holds standing artefacts only, uppercase-named
   (`STATE.md`, `DECISIONS.md`, `FINDINGS.md`, `NOTES.md`). Everything episodic
   and ephemeral lives in `context/engagements/<topic>/` as `<kind>-<slug>.md` —
-  no subdirectories, no renames on plurality or closure.
+  no subdirectories **for model entities**, no renames on plurality or closure.
+  Two declared non-entity directories are permitted: `attachments/` (tracked
+  derivation input, no `kind`/`status`, graduates like an ephemeral) and `tmp/`
+  (untracked scratch). `artefacts.md` carries the handling rules.
 - Ephemeral artefacts (handovers, reports, probes) nest per engagement;
   **graduation is deletion** — record the residue, delete the file, git is the
   archive.
+- **A record belongs to the topic that owns its subject, not the one where it
+  surfaced.** The standing registers are exempt: `DECISIONS.md` and
+  `FINDINGS.md` are corpus-scoped and the decision register is append-only, so
+  an entry is _attributed_ to a topic, never relocated or renumbered into one. A
+  subject with no topic stays an open item in `STATE.md`.
 - **Closing an engagement closes its episodic artefacts** — when an engagement's
   registry status leaves `open`, every plan, spec, and ledger in its directory
   moves to `closed` in the same commit; the lint blocks a closed engagement that

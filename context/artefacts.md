@@ -40,6 +40,56 @@ lives one topic directory below, in `context/engagements/<topic>/`, named
 - **probe** — a ground-truth investigation: verdict, findings, what needs a
   human decision. Same lifecycle as a report.
 
+## Routing — the subject owns the record
+
+A record belongs to the topic that owns its **subject**, not the one where it
+surfaced. A decision taken in a meeting, or a finding raised in a review, is
+filed against the topic it acts on; the topic where it came up keeps one line
+stating what was ruled plus the pointer, and nothing more.
+
+Where a record is raised is not a property of the record. A cross-cutting source
+— a one-to-one, a workshop, a review — therefore pulls records away from the
+topics that own them unless it is routed **item by item**, keeping only what is
+genuinely its own. Meetings are cross-cutting by nature, so this is systematic
+rather than incidental.
+
+Two boundaries:
+
+- **The standing registers are exempt.** `DECISIONS.md` and `FINDINGS.md` are
+  corpus-scoped by construction and the decision register is append-only, so an
+  entry is _attributed_ to a topic, never relocated into one.
+- **A subject with no topic stays an open item in `STATE.md`.** Do not create a
+  topic to receive a single record.
+
+If the owning topic has no ledger, open one. `STATE.md` is not a fallback home
+for run detail.
+
+## Non-entity directories
+
+Two directories may sit inside a topic beside its artefacts, both declared in
+`artefacts.toml` under `[subdirectory.*]`:
+
+- **`attachments/`** — tracked. Source material an artefact is **derived from**:
+  transcripts, whiteboard exports, meeting notes, third-party documents. It
+  carries no `kind` and no `status` and is not lintable, because a `.json`
+  export has nowhere to put frontmatter.
+- **`tmp/`** — untracked working scratch.
+
+The no-subdirectory rule binds model **entities**, whose address is their
+filename; these are not entities, so they are outside it. Nesting inside them is
+unconstrained.
+
+Handling attachments:
+
+- **Prefer citing over copying.** If the original has a durable home under your
+  control, cite it and commit nothing. Copy only when the source belongs to
+  someone else and can be edited or revoked.
+- **Its life is the derived artefact's need for it, not the topic's.** Once the
+  derived artefact is self-sufficient, an attachment **graduates like an
+  ephemeral** — delete the file, git is the archive.
+- **Never cite another topic's `attachments/`.** Copy the excerpt into your own
+  artefact, or cite the external source.
+
 ## Templates
 
 An artefact declares its `kind` and inherits whatever the template below

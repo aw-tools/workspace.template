@@ -14,10 +14,13 @@
 # named <kind>-<slug>.md with the prefix agreeing with frontmatter. Registry
 # checks (both modes): every engagement directory registered, every open
 # engagement present on disk, every depends-on target registered, no closed
-# engagement holding an open episodic artefact. Non-blocking:
-# lists ephemeral artefacts still open. Zero dependencies beyond POSIX sh, awk,
-# and git — the registry TOML is a deliberately flat subset kept stable by
-# dprint.
+# engagement holding an open episodic artefact, no tracked subdirectory under a
+# topic beyond those the registry declares (the check reads tracked paths, not
+# *.md, because a directory of .json/.txt is invisible to a markdown glob).
+# Contents of a declared subdirectory are not artefacts and are skipped by every
+# per-file check. Non-blocking: lists ephemeral artefacts still open. Zero
+# dependencies beyond POSIX sh, awk, and git — the registry TOML is a
+# deliberately flat subset kept stable by dprint.
 #
 # Exit codes: 0 clean, 1 findings, 2 usage/registry error.
 
@@ -36,11 +39,13 @@ esac
 # Flatten the registry into lookup lines:
 #   KC <kind> <class>   KH <kind> <home>   CS <class> <status...>
 #   ES <engagement> <status>   ED <engagement> <dep...>
+#   SD <subdirectory> <tracked>
 TABLE=$(awk '
     /^\[/ { gsub(/[][ ]/, ""); n = split($0, s, "."); type = s[1]; name = s[2]; next }
     /^class = / { gsub(/"/, ""); print "KC", name, $3 }
     /^home = /  { gsub(/"/, ""); print "KH", name, $3 }
     /^status = / { if (type == "engagements") { gsub(/"/, ""); print "ES", name, $3 } }
+    /^tracked = / { if (type == "subdirectory") print "SD", name, $3 }
     /^statuses = / {
         line = $0
         sub(/^statuses = \[/, "", line); sub(/\]$/, "", line)
@@ -58,6 +63,17 @@ TABLE=$(awk '
 
 lookup() { printf '%s\n' "$TABLE" | awk -v t="$1" -v n="$2" '$1==t && $2==n { $1=""; $2=""; sub(/^  /, ""); print; exit }'; }
 
+# Subdirectory names the registry declares as tracked. tmp/ is declared
+# untracked and so never reaches a tracked path — nothing to permit.
+TRACKED_SUBDIRS=$(printf '%s\n' "$TABLE" | awk '$1 == "SD" && $3 == "true" { print $2 }' | tr '\n' ' ')
+
+# Echoes the subdirectory a path sits under inside its topic, empty if the path
+# is a topic-level file or outside the engagements tree.
+nonentity_subdir() {
+    case "$1" in "$ENGAGEMENTS_DIR"/*) ;; *) return 0 ;; esac
+    printf '%s\n' "${1#"$ENGAGEMENTS_DIR"/}" | awk -F/ 'NF > 2 { print $2 }'
+}
+
 fm_get() {
     awk -v key="$2:" '
         NR == 1 { if ($0 != "---") exit; next }
@@ -72,6 +88,13 @@ OPEN_EPHEMERA=""
 for f in $FILES; do
     case "$(basename "$f")" in README.md | AGENTS.md | CLAUDE.md | CONTRACT.md) continue ;; esac
     [ -f "$f" ] || continue
+
+    # Anything below a topic directory is not an artefact: no kind, no status, no
+    # naming rule. Without this, a markdown transcript in attachments/ is
+    # rejected by the path check, which admits exactly one directory below the
+    # home. Whether the directory is permitted at all is the registry check's
+    # business, not this loop's.
+    [ -z "$(nonentity_subdir "$f")" ] || continue
 
     if [ "$(head -n 1 "$f")" != "---" ]; then
         echo "$f: missing frontmatter"
@@ -159,11 +182,21 @@ printf '%s\n' "$TABLE" | awk '$1 == "ED" { for (i = 3; i <= NF; i++) print $2, $
     [ -n "$(lookup ES "$dep")" ] ||
         echo "registry: engagement '$name' depends on unregistered '$dep'"
 done | grep . && FAIL=1
+# Non-entity directories: a topic may hold only the tracked subdirectories the
+# registry declares. Undeclared ones grow unnoticed precisely because a markdown
+# glob never sees them.
+git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 4 { print $3, $4 }' | sort -u | while read -r topic sub; do
+    case " $TRACKED_SUBDIRS " in
+    *" $sub "*) ;;
+    *) echo "$ENGAGEMENTS_DIR/$topic/$sub/: undeclared subdirectory (registry permits: ${TRACKED_SUBDIRS% })" ;;
+    esac
+done | grep . && FAIL=1
 # Closure hygiene: a non-open engagement must hold no open episodic artefact —
 # closing an engagement closes its plans, specs, and ledger.
 printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 != "open" { print $2 }' | while read -r name; do
     for f in $(git ls-files "$ENGAGEMENTS_DIR/$name"); do
         case "$f" in *.md) ;; *) continue ;; esac
+        [ -z "$(nonentity_subdir "$f")" ] || continue
         [ "$(lookup KC "$(fm_get "$f" kind)")" = "episodic" ] || continue
         [ "$(fm_get "$f" status)" = "open" ] &&
             echo "$f: episodic artefact still 'open' under closed engagement '$name' (close it with the engagement)"

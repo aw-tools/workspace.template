@@ -10,8 +10,23 @@
 # directory below theirs as <kind>-<slug>.md. The lint derives this from the
 # class, so it is not repeated per kind.
 #
+# Non-entity directories: a topic may hold the subdirectories declared below
+# beside its artefacts. They are not artefacts — they carry no kind and no
+# status — and the no-subdirectory rule binds model *entities*, whose address is
+# their filename. Only tracked ones are enforceable; tmp/ is gitignored and never
+# appears in a tracked path. Nesting inside a non-entity directory is
+# unconstrained.
+#
 # The engagement register below ships empty. Add an [engagements.<name>] entry
 # the first time you open an engagement directory under context/engagements/.
+
+[subdirectory.attachments]
+tracked = true
+purpose = "derivation input — source material an artefact is derived from; graduates like an ephemeral"
+
+[subdirectory.tmp]
+tracked = false
+purpose = "working scratch, untracked"
 
 [class.standing]
 statuses = ["live", "retired"]
