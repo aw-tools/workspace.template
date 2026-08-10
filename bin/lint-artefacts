@@ -18,9 +18,12 @@
 # topic beyond those the registry declares (the check reads tracked paths, not
 # *.md, because a directory of .json/.txt is invisible to a markdown glob).
 # Contents of a declared subdirectory are not artefacts and are skipped by every
-# per-file check. Non-blocking: lists ephemeral artefacts still open. Zero
-# dependencies beyond POSIX sh, awk, and git — the registry TOML is a
-# deliberately flat subset kept stable by dprint.
+# per-file check. Non-blocking: lists ephemeral artefacts still open, and lists
+# any *.md under the workspace root or context/ (outside tmp/) that git does not
+# track — every check above reads tracked or staged paths only, so an untracked
+# artefact is otherwise invisible by construction. Zero dependencies beyond
+# POSIX sh, awk, and git — the registry TOML is a deliberately flat subset kept
+# stable by dprint.
 #
 # Exit codes: 0 clean, 1 findings, 2 usage/registry error.
 
@@ -206,6 +209,27 @@ done | grep . && FAIL=1
 if [ -n "$OPEN_EPHEMERA" ]; then
     echo "warning: ephemeral artefacts still open (graduate or expire when their unit lands):" >&2
     for f in $OPEN_EPHEMERA; do echo "  $f" >&2; done
+fi
+
+# Untracked *.md at the root or under context/: the checks above enumerate
+# tracked or staged paths only, so an artefact that was never `git add`-ed is
+# invisible to every one of them. tmp/ is untracked by design and excluded here
+# to keep the noise floor low; a declared subdirectory's contents are not
+# artefacts (nonentity_subdir), so its own untracked .md files are skipped the
+# same way the per-file loop skips them.
+UNTRACKED_MD=""
+CANDIDATES=$(
+    { find . -maxdepth 1 -name '*.md'; find context -name '*.md' -not -path '*/tmp/*'; } 2> /dev/null |
+        sed 's|^\./||' | sort -u
+)
+for f in $CANDIDATES; do
+    [ -z "$(nonentity_subdir "$f")" ] || continue
+    git ls-files --error-unmatch -- "$f" > /dev/null 2>&1 || UNTRACKED_MD="$UNTRACKED_MD $f"
+done
+
+if [ -n "$UNTRACKED_MD" ]; then
+    echo "warning: untracked artefacts (invisible to every check above until 'git add'):" >&2
+    for f in $UNTRACKED_MD; do echo "  $f" >&2; done
 fi
 
 exit $FAIL
