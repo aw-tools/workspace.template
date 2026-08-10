@@ -130,6 +130,13 @@ unformatted commits. If it blocks, run `dprint fmt` and re-commit.
   workspace recognises, never controls: honour the repo's _current_ model, cache
   no copy. Absent one, default conservative — commit, push a feature branch,
   open a draft PR; stop at ready-for-review and merge.
+- **Landing cleans up the checkout**: once a member repository's PR lands,
+  restore that checkout without being asked — drop the parallel worktree if the
+  work ran in one, or if it ran in the main worktree, check out the default
+  branch, fast-forward it and delete the merged local branch. A checkout left on
+  a merged branch with a gone upstream reads to the next session as live work.
+  Hygiene, not a gate: it follows the merge the owner performed and needs no
+  further sign-off.
 
 Orchestrated multi-worker engagements are opt-in: adopt a skills repository
 carrying an orchestration kernel skill (the manifest's `skills` opt-in) to
