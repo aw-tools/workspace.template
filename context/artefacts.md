@@ -90,6 +90,26 @@ Handling attachments:
 - **Never cite another topic's `attachments/`.** Copy the excerpt into your own
   artefact, or cite the external source.
 
+## Agent surfaces are out of scope
+
+Three directories in the workspace layer belong to agent tooling rather than to
+this model, and the lint skips everything beneath them:
+
+- **`.skills/`** — workspace-local skills.
+- **`.claude/`** and **`.agents/`** — per-tool agent configuration: subagent
+  definitions, commands, output styles.
+
+Their markdown carries frontmatter of a **foreign schema** — a skill declares
+`name` and `description`, never `kind` and `status` — so there is nothing here
+for the model to check and no authority for it to check against. The exclusion
+is by directory, not by filename: the whole tree is the tooling's, and a
+`SKILL.md` basename rule would also excuse a stray one sitting inside
+`context/`.
+
+Skills that reach a workspace by symlink from a member repository are invisible
+to the lint regardless, because git tracks the link and not the target; this
+rule is what admits workspace-local ones kept in the workspace's own history.
+
 ## Templates
 
 An artefact declares its `kind` and inherits whatever the template below

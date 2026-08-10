@@ -96,6 +96,11 @@ templates, `bin/lint-artefacts` enforces both at commit time.
   Two declared non-entity directories are permitted: `attachments/` (tracked
   derivation input, no `kind`/`status`, graduates like an ephemeral) and `tmp/`
   (untracked scratch). `artefacts.md` carries the handling rules.
+- **The model governs `context/` only.** `.skills/`, `.claude/` and `.agents/`
+  are agent surfaces, out of scope by directory: their markdown carries
+  frontmatter of a foreign schema (`name`, not `kind`), so the lint skips
+  everything beneath them and a workspace-local skill needs no artefact
+  frontmatter.
 - Ephemeral artefacts (handovers, reports, probes) nest per engagement;
   **graduation is deletion** — record the residue, delete the file, git is the
   archive.

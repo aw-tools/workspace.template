@@ -18,7 +18,8 @@
 # topic beyond those the registry declares (the check reads tracked paths, not
 # *.md, because a directory of .json/.txt is invisible to a markdown glob).
 # Contents of a declared subdirectory are not artefacts and are skipped by every
-# per-file check. Non-blocking: lists ephemeral artefacts still open, and lists
+# per-file check, as is everything under an agent-surface directory.
+# Non-blocking: lists ephemeral artefacts still open, and lists
 # any *.md under the workspace root or context/ (outside tmp/) that git does not
 # track — every check above reads tracked or staged paths only, so an untracked
 # artefact is otherwise invisible by construction. Zero dependencies beyond
@@ -89,6 +90,15 @@ FAIL=0
 OPEN_EPHEMERA=""
 
 for f in $FILES; do
+    # Agent surfaces are out of scope by directory. A skill, a subagent
+    # definition or a command is markdown carrying frontmatter of a foreign
+    # schema — it declares `name`, never `kind` — so the model has nothing to say
+    # about it. By directory and not by filename deliberately: the whole tree
+    # belongs to the tooling, and a `SKILL.md` basename rule would also excuse a
+    # stray one sitting inside context/. Skills reaching a workspace by symlink
+    # from a member repo are invisible here anyway (git tracks the link, not the
+    # target), so this is what admits workspace-local ones kept in this history.
+    case "$f" in .agents/* | .claude/* | .skills/*) continue ;; esac
     case "$(basename "$f")" in README.md | AGENTS.md | CLAUDE.md | CONTRACT.md) continue ;; esac
     [ -f "$f" ] || continue
 
