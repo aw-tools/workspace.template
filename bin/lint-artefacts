@@ -150,8 +150,8 @@ for f in $FILES; do
         # artefacts.md is the registry's prose companion — lowercase by design
         # (data and reference, not every-session signage).
         if [ "$f" != "context/artefacts.md" ]; then
-            expr "$f" : "$home/[A-Z0-9_-][A-Z0-9_-]*\.md\$" > /dev/null ||
-                { echo "$f: kind '$kind' belongs directly in $home/ under an uppercase name"; FAIL=1; }
+            expr "$f" : "$home/[A-Z0-9_][A-Z0-9_]*\.md\$" > /dev/null ||
+                { echo "$f: kind '$kind' belongs directly in $home/ under an uppercase name, words separated by underscore"; FAIL=1; }
         fi
         ;;
     *)
