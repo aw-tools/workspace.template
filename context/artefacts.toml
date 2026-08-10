@@ -48,7 +48,7 @@ naming = "STATE.md (singleton)"
 [kind.doctrine]
 class = "standing"
 home = "context"
-naming = "<TOPIC>.md (uppercase)"
+naming = "<TOPIC>.md (uppercase; multiword topics separated by underscore, e.g. PRODUCT_ROADMAP.md)"
 
 [kind.decision]
 class = "binding"
