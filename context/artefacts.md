@@ -64,6 +64,17 @@ Two boundaries:
 If the owning topic has no ledger, open one. `STATE.md` is not a fallback home
 for run detail.
 
+## Engagement lifecycle
+
+An engagement's directory location follows its registry status, never the other
+way round. An **open** engagement lives at `context/engagements/<name>/`; once
+its status turns **closed**, the directory moves to `context/archive/<name>/` in
+the same commit that closes its episodic artefacts. `bin/lint-artefacts`
+enforces both directions: an open engagement found under `context/archive/`, or
+a closed one still under `context/engagements/`, is a finding. Archiving is not
+mandatory — a closed engagement whose ephemera all graduated by deletion is free
+to have no directory at all, exactly as before.
+
 ## Non-entity directories
 
 Two directories may sit inside a topic beside its artefacts, both declared in
