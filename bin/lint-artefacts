@@ -11,14 +11,17 @@
 # Checks (blocking): frontmatter present; kind registered; status legal for the
 # kind's class; standing/binding files uppercase directly in their home;
 # episodic/ephemeral files one registered engagement directory below theirs,
-# named <kind>-<slug>.md with the prefix agreeing with frontmatter. Registry
-# checks (both modes): every engagement directory registered, every open
-# engagement present on disk, every depends-on target registered, no closed
-# engagement holding an open episodic artefact, no tracked subdirectory under a
-# topic beyond those the registry declares (the check reads tracked paths, not
-# *.md, because a directory of .json/.txt is invisible to a markdown glob).
-# Contents of a declared subdirectory are not artefacts and are skipped by every
-# per-file check, as is everything under an agent-surface directory.
+# named <kind>-<slug>.md with the prefix agreeing with frontmatter, and that
+# directory under context/engagements/ for an open engagement or
+# context/archive/ for a closed one, never the other way round. Registry checks
+# (both modes): every engagement directory registered under whichever tree
+# matches its status, every open engagement present on disk, every depends-on
+# target registered, no closed engagement holding an open episodic artefact, no
+# tracked subdirectory under a topic beyond those the registry declares (the
+# check reads tracked paths, not *.md, because a directory of .json/.txt is
+# invisible to a markdown glob). Contents of a declared subdirectory are not
+# artefacts and are skipped by every per-file check, as is everything under an
+# agent-surface directory.
 # Non-blocking: lists ephemeral artefacts still open, and lists
 # any *.md under the workspace root or context/ (outside tmp/) that git does not
 # track — every check above reads tracked or staged paths only, so an untracked
@@ -32,6 +35,7 @@ set -u
 
 REGISTRY="context/artefacts.toml"
 ENGAGEMENTS_DIR="context/engagements"
+ARCHIVE_DIR="context/archive"
 [ -f "$REGISTRY" ] || { echo "error: $REGISTRY not found (run from the repository root)" >&2; exit 2; }
 
 case "${1:-}" in
@@ -72,10 +76,14 @@ lookup() { printf '%s\n' "$TABLE" | awk -v t="$1" -v n="$2" '$1==t && $2==n { $1
 TRACKED_SUBDIRS=$(printf '%s\n' "$TABLE" | awk '$1 == "SD" && $3 == "true" { print $2 }' | tr '\n' ' ')
 
 # Echoes the subdirectory a path sits under inside its topic, empty if the path
-# is a topic-level file or outside the engagements tree.
+# is a topic-level file or outside the engagements/archive trees.
 nonentity_subdir() {
-    case "$1" in "$ENGAGEMENTS_DIR"/*) ;; *) return 0 ;; esac
-    printf '%s\n' "${1#"$ENGAGEMENTS_DIR"/}" | awk -F/ 'NF > 2 { print $2 }'
+    case "$1" in
+    "$ENGAGEMENTS_DIR"/*) rel="${1#"$ENGAGEMENTS_DIR"/}" ;;
+    "$ARCHIVE_DIR"/*) rel="${1#"$ARCHIVE_DIR"/}" ;;
+    *) return 0 ;;
+    esac
+    printf '%s\n' "$rel" | awk -F/ 'NF > 2 { print $2 }'
 }
 
 fm_get() {
@@ -155,11 +163,24 @@ for f in $FILES; do
         fi
         ;;
     *)
-        if expr "$f" : "$home/[^/][^/]*/[^/][^/]*\.md\$" > /dev/null; then
+        loc=""
+        if expr "$f" : "$ENGAGEMENTS_DIR/[^/][^/]*/[^/][^/]*\.md\$" > /dev/null; then
+            loc="$ENGAGEMENTS_DIR"
+        elif expr "$f" : "$ARCHIVE_DIR/[^/][^/]*/[^/][^/]*\.md\$" > /dev/null; then
+            loc="$ARCHIVE_DIR"
+        fi
+        if [ -n "$loc" ]; then
             topic=$(printf '%s\n' "$f" | awk -F/ '{ print $(NF-1) }')
             base=$(basename "$f")
-            if [ -z "$(lookup ES "$topic")" ]; then
+            estatus=$(lookup ES "$topic")
+            if [ -z "$estatus" ]; then
                 echo "$f: engagement '$topic' not in registry"
+                FAIL=1
+            elif [ "$loc" = "$ENGAGEMENTS_DIR" ] && [ "$estatus" = "closed" ]; then
+                echo "$f: engagement '$topic' is closed, belongs under $ARCHIVE_DIR/$topic/ not $ENGAGEMENTS_DIR/$topic/"
+                FAIL=1
+            elif [ "$loc" = "$ARCHIVE_DIR" ] && [ "$estatus" != "closed" ]; then
+                echo "$f: engagement '$topic' is not closed, belongs under $ENGAGEMENTS_DIR/$topic/ not $ARCHIVE_DIR/$topic/"
                 FAIL=1
             fi
             case "$base" in
@@ -170,7 +191,7 @@ for f in $FILES; do
                 ;;
             esac
         else
-            echo "$f: kind '$kind' belongs in $home/<engagement>/$kind-<slug>.md"
+            echo "$f: kind '$kind' belongs in $ENGAGEMENTS_DIR/<engagement>/$kind-<slug>.md (or $ARCHIVE_DIR/ once the engagement is closed)"
             FAIL=1
         fi
         ;;
@@ -183,8 +204,24 @@ done
 
 # Registry-level checks, independent of which files are staged.
 for topic in $(git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 3 { print $3 }' | sort -u); do
-    [ -n "$(lookup ES "$topic")" ] ||
-        { echo "$ENGAGEMENTS_DIR/$topic/: engagement not in registry"; FAIL=1; }
+    estatus=$(lookup ES "$topic")
+    if [ -z "$estatus" ]; then
+        echo "$ENGAGEMENTS_DIR/$topic/: engagement not in registry"
+        FAIL=1
+    elif [ "$estatus" = "closed" ]; then
+        echo "$ENGAGEMENTS_DIR/$topic/: engagement is closed, belongs under $ARCHIVE_DIR/$topic/"
+        FAIL=1
+    fi
+done
+for topic in $(git ls-files "$ARCHIVE_DIR" | awk -F/ 'NF > 3 { print $3 }' | sort -u); do
+    estatus=$(lookup ES "$topic")
+    if [ -z "$estatus" ]; then
+        echo "$ARCHIVE_DIR/$topic/: engagement not in registry"
+        FAIL=1
+    elif [ "$estatus" != "closed" ]; then
+        echo "$ARCHIVE_DIR/$topic/: engagement is not closed, belongs under $ENGAGEMENTS_DIR/$topic/"
+        FAIL=1
+    fi
 done
 printf '%s\n' "$TABLE" | awk '$1 == "ES" { print $2, $3 }' | while read -r name estatus; do
     if [ "$estatus" = "open" ] && [ -z "$(git ls-files "$ENGAGEMENTS_DIR/$name")" ]; then
@@ -198,16 +235,17 @@ done | grep . && FAIL=1
 # Non-entity directories: a topic may hold only the tracked subdirectories the
 # registry declares. Undeclared ones grow unnoticed precisely because a markdown
 # glob never sees them.
-git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 4 { print $3, $4 }' | sort -u | while read -r topic sub; do
-    case " $TRACKED_SUBDIRS " in
-    *" $sub "*) ;;
-    *) echo "$ENGAGEMENTS_DIR/$topic/$sub/: undeclared subdirectory (registry permits: ${TRACKED_SUBDIRS% })" ;;
-    esac
-done | grep . && FAIL=1
+{ git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 4 { print "'"$ENGAGEMENTS_DIR"'", $3, $4 }'; git ls-files "$ARCHIVE_DIR" | awk -F/ 'NF > 4 { print "'"$ARCHIVE_DIR"'", $3, $4 }'; } |
+    sort -u | while read -r dir topic sub; do
+        case " $TRACKED_SUBDIRS " in
+        *" $sub "*) ;;
+        *) echo "$dir/$topic/$sub/: undeclared subdirectory (registry permits: ${TRACKED_SUBDIRS% })" ;;
+        esac
+    done | grep . && FAIL=1
 # Closure hygiene: a non-open engagement must hold no open episodic artefact —
 # closing an engagement closes its plans, specs, and ledger.
 printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 != "open" { print $2 }' | while read -r name; do
-    for f in $(git ls-files "$ENGAGEMENTS_DIR/$name"); do
+    for f in $(git ls-files "$ENGAGEMENTS_DIR/$name" "$ARCHIVE_DIR/$name"); do
         case "$f" in *.md) ;; *) continue ;; esac
         [ -z "$(nonentity_subdir "$f")" ] || continue
         [ "$(lookup KC "$(fm_get "$f" kind)")" = "episodic" ] || continue
