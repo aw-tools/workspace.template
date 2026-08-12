@@ -19,9 +19,10 @@
 # target registered, no closed engagement holding an open episodic artefact, no
 # tracked subdirectory under a topic beyond those the registry declares (the
 # check reads tracked paths, not *.md, because a directory of .json/.txt is
-# invisible to a markdown glob). Contents of a declared subdirectory are not
-# artefacts and are skipped by every per-file check, as is everything under an
-# agent-surface directory.
+# invisible to a markdown glob), and every open engagement that has started
+# (holds a tracked file beyond its own plan or spec) holding a ledger-*.md.
+# Contents of a declared subdirectory are not artefacts and are skipped by
+# every per-file check, as is everything under an agent-surface directory.
 # Non-blocking: lists ephemeral artefacts still open, and lists
 # any *.md under the workspace root or context/ (outside tmp/) that git does not
 # track — every check above reads tracked or staged paths only, so an untracked
@@ -226,6 +227,26 @@ done
 printf '%s\n' "$TABLE" | awk '$1 == "ES" { print $2, $3 }' | while read -r name estatus; do
     if [ "$estatus" = "open" ] && [ -z "$(git ls-files "$ENGAGEMENTS_DIR/$name")" ]; then
         echo "registry: open engagement '$name' has no directory under $ENGAGEMENTS_DIR/"
+    fi
+done | grep . && FAIL=1
+# Ledger-start predicate: an open engagement has "started" once a tracked file
+# other than its own plan or spec exists. Started with no ledger-*.md present
+# is a run with no record. Subdirectory contents (attachments/tmp) are not
+# artefacts (nonentity_subdir) and are skipped, same as every per-file check
+# above.
+printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 == "open" { print $2 }' | while read -r name; do
+    has_other=0
+    has_ledger=0
+    for f in $(git ls-files "$ENGAGEMENTS_DIR/$name"); do
+        [ -z "$(nonentity_subdir "$f")" ] || continue
+        case "$(basename "$f")" in
+        plan-*.md | spec-*.md) ;;
+        ledger-*.md) has_ledger=1 ;;
+        *) has_other=1 ;;
+        esac
+    done
+    if [ "$has_other" = 1 ] && [ "$has_ledger" = 0 ]; then
+        echo "$ENGAGEMENTS_DIR/$name/: engagement has started (holds a file beyond plan/spec) but has no ledger-*.md"
     fi
 done | grep . && FAIL=1
 printf '%s\n' "$TABLE" | awk '$1 == "ED" { for (i = 3; i <= NF; i++) print $2, $i }' | while read -r name dep; do
