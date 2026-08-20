@@ -24,7 +24,12 @@ The rest of the starting layer is guidance rather than an enforced file list:
 - `bin/bootstrap`;
 - `context/README.md`;
 - `garden.yaml`, containing only the include for `.aw/trees.yaml`;
-- `tmp/.keep`.
+- `tmp/.keep`;
+- `.claude/settings.json`, disabling background-session worktree isolation so a
+  dispatched worker may use the dedicated file tools in the checkout it was
+  given. Left on, the guard refuses `Write` and `Edit` while leaving shell
+  writes untouched, which costs a worker its safest editing tools without
+  containing anything.
 
 This template also ships the artefact-governance layer, so a materialised
 workspace is governed from birth:
