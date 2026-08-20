@@ -19,6 +19,11 @@ enforcement are deliberately deferred.
 
 The rest of the starting layer is guidance rather than an enforced file list:
 
+- `.claude/settings.json`, disabling background-session worktree isolation so a
+  dispatched worker may use the dedicated file tools in the checkout it was
+  given. Left on, the guard refuses `Write` and `Edit` while leaving shell
+  writes untouched, which costs a worker its safest editing tools without
+  containing anything;
 - `AGENTS.md`, with `CLAUDE.md` as a symlink to it;
 - `README.md`;
 - `bin/bootstrap`;
