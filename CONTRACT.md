@@ -25,10 +25,10 @@ The rest of the starting layer is guidance rather than an enforced file list:
   writes untouched, which costs a worker its safest editing tools without
   containing anything;
 - `AGENTS.md`, with `CLAUDE.md` as a symlink to it;
+- `README.md`;
 - `bin/bootstrap`;
 - `context/README.md`;
 - `garden.yaml`, containing only the include for `.aw/trees.yaml`;
-- `README.md`;
 - `tmp/.keep`.
 
 This template also ships the artefact-governance layer, so a materialised
