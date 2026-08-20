@@ -19,17 +19,17 @@ enforcement are deliberately deferred.
 
 The rest of the starting layer is guidance rather than an enforced file list:
 
-- `AGENTS.md`, with `CLAUDE.md` as a symlink to it;
-- `README.md`;
-- `bin/bootstrap`;
-- `context/README.md`;
-- `garden.yaml`, containing only the include for `.aw/trees.yaml`;
-- `tmp/.keep`;
 - `.claude/settings.json`, disabling background-session worktree isolation so a
   dispatched worker may use the dedicated file tools in the checkout it was
   given. Left on, the guard refuses `Write` and `Edit` while leaving shell
   writes untouched, which costs a worker its safest editing tools without
-  containing anything.
+  containing anything;
+- `AGENTS.md`, with `CLAUDE.md` as a symlink to it;
+- `bin/bootstrap`;
+- `context/README.md`;
+- `garden.yaml`, containing only the include for `.aw/trees.yaml`;
+- `README.md`;
+- `tmp/.keep`.
 
 This template also ships the artefact-governance layer, so a materialised
 workspace is governed from birth:
