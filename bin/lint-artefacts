@@ -301,9 +301,7 @@ if [ -f "$STATE" ]; then
     STATE_ITEMS=$(awk '
         /^## / { initems = ($0 ~ /^## ([0-9]+\. )?Open items/); doflush(); next }
         !initems { next }
-        # An angle-bracketed heading is the skeleton placeholder shipped by the
-        # seed, instructive prose rather than an entry — skip the whole block.
-        /^### / { doflush(); slug = ($2 ~ /^</) ? "" : $2; f = ""; n = x = b = l = 0; next }
+        /^### / { doflush(); slug = $2; f = ""; n = x = b = l = 0; next }
         slug == "" { next }
         /^- Now:/     { f = "n"; n += NF - 2; next }
         /^- Next:/    { f = "x"; x += NF - 2; next }

@@ -41,12 +41,13 @@ item with `Ledger: —`.
 
 ## Open items
 
-<One entry per open engagement, in the four-field shape:>
+<One entry per open engagement, in the four-field shape; Ledger names the
+engagement's ledger, or its plan or spec while no ledger exists, or — for a
+subject with no topic:>
 
 ### <engagement-slug>
 
 - Now: <where it stands, present tense>
 - Next: <the immediate next action>
 - Blocked: <gate or dependency, or —>
-- Ledger: <the engagement's ledger, or its plan or spec while no ledger exists,
-  or — for a subject with no topic>
+- Ledger: —
