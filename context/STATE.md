@@ -5,24 +5,43 @@ status: live
 
 # State
 
-The single artefact that resumes a cold session. Keep it to resume-state only:
-what is done, what was decided, what is mid-flight, and what to read first.
-Rewrite sections in place as work proceeds — never append corrections. Anything
-not captured here (or in the registers it points to) is lost when the session
-restarts.
+The single artefact that resumes a cold session.
 
-Decisions belong in `DECISIONS.md`, durable facts in `FINDINGS.md`, friction in
-`NOTES.md`, run detail in each engagement's ledger. This file references them;
-it does not duplicate them.
+## Keeping this file
+
+Read it whole; write it plain. This file is consumed in its entirety, every time
+— keep it short enough for that, and write every field in plain language a
+reader can follow without knowing an engagement's own vocabulary. The jargon
+lives in the plan or ledger an item points at, never here.
+
+An update replaces an item's fields with the present state. If your edit only
+adds text, you are writing a changelog — stop and rewrite. Decisions belong in
+`DECISIONS.md`, durable facts in `FINDINGS.md`, friction in `NOTES.md`, run
+detail and verbatim verification in the owning engagement's ledger: this file
+points, never quotes. Anything not captured here (or in the registers it points
+to) is lost when the session restarts.
+
+Open items keep the field shape — Now / Next / Blocked / Ledger, at most 50
+tokens per field (template in `context/artefacts.md`), enforced by
+`bin/lint-artefacts`. Closing an engagement deletes its item in the closing
+commit, residue routed first. A subject with no topic may hold an item with
+`Ledger: —`.
 
 ## Where things stand
 
 <One line per active workstream: where it is, what unblocks it next.>
 
-## Open items
-
-<Numbered, each a discrete piece of pending or blocked work.>
-
 ## Read-first map
 
 <The handful of artefacts a fresh session should open, in order.>
+
+## Open items
+
+<One entry per open engagement, in the four-field shape:>
+
+### <engagement-slug>
+
+- Now: <where it stands, present tense>
+- Next: <the immediate next action>
+- Blocked: <gate or dependency, or —>
+- Ledger: <engagements/<slug>/ledger-run.md, or — for a subject with no topic>

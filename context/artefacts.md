@@ -273,6 +273,26 @@ status: open
 ## What needs a human decision
 ```
 
-`state` and `decision` have no template: `STATE.md` is a maintained singleton,
-and decisions are numbered entries in the `DECISIONS.md` register, whose header
-carries the entry discipline.
+### state — open-item entry
+
+`STATE.md` is a maintained singleton, but each entry under its `## Open items`
+section has a fixed shape, enforced by `bin/lint-artefacts`:
+
+```markdown
+### <engagement-slug>
+
+- Now: <where it stands, present tense>
+- Next: <the immediate next action>
+- Blocked: <gate or dependency, or —>
+- Ledger: <engagements/<slug>/ledger-run.md, or — for a subject with no topic>
+```
+
+Now, Next and Blocked carry at most 50 tokens each (a token is one
+whitespace-delimited field); Ledger is one line. The heading slug must name an
+open engagement in the registry unless the entry carries `Ledger: —` (a subject
+with no topic). Write fields in plain language — an engagement's own vocabulary
+stays in the plan or ledger the entry points at. No fenced code blocks anywhere
+in `STATE.md`: verbatim output belongs to the owning ledger.
+
+`decision` has no template: decisions are numbered entries in the `DECISIONS.md`
+register, whose header carries the entry discipline.
