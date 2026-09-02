@@ -74,10 +74,10 @@ part of the work, not a report written afterwards.
 - Rewrite, never append: an update replaces an item's fields with the present
   state. If your edit only adds text, you are writing a changelog — stop and
   rewrite.
-- **Open items keep the field shape** — Now / Next / Blocked / Ledger, at most
-  50 tokens per field, plain language (template in `context/artefacts.md`).
-  `bin/lint-artefacts` enforces it; closing an engagement removes its item in
-  the closing commit, residue routed first.
+- **Open items keep the field shape** — Now / Next / Blocked / Ledger: Now, Next
+  and Blocked at most 50 tokens each, Ledger one line, plain language (template
+  in `context/artefacts.md`). `bin/lint-artefacts` enforces it; closing an
+  engagement removes its item in the closing commit, residue routed first.
 
 ## Working agreements
 

@@ -21,11 +21,15 @@ detail and verbatim verification in the owning engagement's ledger: this file
 points, never quotes. Anything not captured here (or in the registers it points
 to) is lost when the session restarts.
 
-Open items keep the field shape — Now / Next / Blocked / Ledger, at most 50
-tokens per field (template in `context/artefacts.md`), enforced by
-`bin/lint-artefacts`. Closing an engagement deletes its item in the closing
-commit, residue routed first. A subject with no topic may hold an item with
-`Ledger: —`.
+Open items keep the field shape — Now / Next / Blocked / Ledger: Now, Next and
+Blocked carry at most 50 tokens each, Ledger one line (template in
+`context/artefacts.md`), enforced by `bin/lint-artefacts`. Blocked names the
+external gate or dependency the item waits on, never a restatement of Next.
+Order items by liveness — in flight first, ready next, parked or gated after,
+no-topic subjects last. The caps bound each item, not how many there are, so
+total length is held by discipline alone. Closing an engagement deletes its item
+in the closing commit, residue routed first. A subject with no topic may hold an
+item with `Ledger: —`.
 
 ## Where things stand
 
@@ -44,4 +48,5 @@ commit, residue routed first. A subject with no topic may hold an item with
 - Now: <where it stands, present tense>
 - Next: <the immediate next action>
 - Blocked: <gate or dependency, or —>
-- Ledger: <engagements/<slug>/ledger-run.md, or — for a subject with no topic>
+- Ledger: <the engagement's ledger, or its plan or spec while no ledger exists,
+  or — for a subject with no topic>

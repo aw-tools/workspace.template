@@ -283,8 +283,10 @@ section has a fixed shape, enforced by `bin/lint-artefacts`:
 
 - Now: <where it stands, present tense>
 - Next: <the immediate next action>
-- Blocked: <gate or dependency, or —>
-- Ledger: <engagements/<slug>/ledger-run.md, or — for a subject with no topic>
+- Blocked: <the external gate or dependency the item waits on, or —; never a
+  restatement of Next>
+- Ledger: <the engagement's ledger, or its plan or spec while no ledger exists,
+  or — for a subject with no topic>
 ```
 
 Now, Next and Blocked carry at most 50 tokens each (a token is one
