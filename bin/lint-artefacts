@@ -23,7 +23,7 @@
 # (holds a tracked file beyond its own plan or spec) holding a ledger-*.md, and
 # STATE.md in shape: no fenced code blocks; a mandatory ordered §Next list
 # pointing at item slugs; open items in the dated four-field bullet skeleton,
-# token-capped, counted against a file cap and blocked when stale; item slugs
+# token-capped, counted against a file cap and warned about when stale; item slugs
 # naming open non-dormant engagements (optionally <engagement>/<thread>) or
 # taking the item- prefix with 'Ledger: —'; dormant open engagements as
 # roll-up lines instead — every number read from the registry's [state] table
@@ -293,7 +293,9 @@ done | grep . && FAIL=1
 # list, capped in entries, each naming an existing item slug — pointers, never
 # prose. Every entry under '## Open items' is the four-field bullet skeleton
 # with token caps (a token is one whitespace-delimited field), a (YYYY-MM-DD)
-# last-rewritten date in the heading blocked past stale_days, and a slug that
+# last-rewritten date in the heading — warned about past stale_days, never
+# blocked: a block would fire on unrelated commits and invite date-bumping,
+# corrupting the very signal — and a slug that
 # names an open non-dormant engagement — optionally as <engagement>/<thread>,
 # several items per engagement — unless it takes the reserved item- prefix,
 # which requires 'Ledger: —' and marks a no-topic subject (its slug a
@@ -388,9 +390,7 @@ if [ -f "$STATE" ]; then
                 print "BAD " slug ": heading carries no (YYYY-MM-DD) last-rewritten date"
             else {
                 age = tj - jdn(d)
-                if (age > stale)
-                    print "BAD " slug ": stale — last rewritten " age " days ago, cap " stale \
-                        "; a refresh re-reads the item against reality, never only bumps the date"
+                if (age > stale) print "STALE " slug " " age
             }
             if (slug ~ /^item-/) {
                 if (nt) print "NOTOPIC " slug
@@ -445,6 +445,13 @@ if [ -f "$STATE" ]; then
             ;;
         esac
     done | grep . && FAIL=1
+    # Staleness warns, never blocks: a block would fire on whoever commits
+    # next and invite a date bump without a real re-read.
+    STALE_LINES=$(printf '%s\n' "$STATE_ITEMS" | awk '$1 == "STALE" { print "  " $2 " (" $3 " days)" }')
+    if [ -n "$STALE_LINES" ]; then
+        echo "warning: stale open items — re-read each against reality and rewrite or confirm it; if the refresh is real work, route it into §Next:" >&2
+        printf '%s\n' "$STALE_LINES" >&2
+    fi
     # The reverse coupling: an open engagement absent from both tiers is
     # invisible to a resuming session — the same gap that once let a run go
     # unrecorded.

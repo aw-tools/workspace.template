@@ -295,10 +295,11 @@ Now, Next and Blocked carry at most `field_tokens` tokens each (a token is one
 whitespace-delimited field); Ledger is one line. An item's subject is one live
 thread: an engagement carrying several independent threads holds several items,
 slugged `<engagement>/<thread>`, and the file holds at most `max_items` items in
-all, so a split costs a slot. The lint blocks an item whose date is older than
-`stale_days`; a legitimate refresh re-reads the item against reality and
-rewrites or confirms it — bumping the date without that re-check is
-date-washing, which turns the date into false certification.
+all, so a split costs a slot. Past `stale_days` the lint warns — on every
+commit, never blocking — until the item is genuinely rewritten; a legitimate
+refresh re-reads the item against reality and rewrites or confirms it, and if
+the refresh is real work it earns a `## Next` pointer. Bumping the date without
+that re-check is date-washing, which turns the date into false certification.
 
 The heading slug (or its part before `/`) must name an open engagement in the
 registry whose `activity` is not `dormant`. A subject with no topic takes the

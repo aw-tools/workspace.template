@@ -79,14 +79,15 @@ part of the work, not a report written afterwards.
   (template in `context/artefacts.md`). An item's subject is one live thread —
   an engagement carrying several holds several items, slugged
   `<engagement>/<thread>` — and the file caps its total item count, so a split
-  costs a slot. Item headings carry a last-rewritten date; the lint blocks a
-  stale one, and a refresh re-reads the item against reality rather than only
-  bumping the date. A dormant open engagement (registry `activity`) holds one
-  roll-up line instead of an item; a no-topic subject takes the `item-` prefix,
-  whose slug is a permanent address; the mandatory `## Next` list points at up
-  to eight item slugs. Every cap reads from the registry's `[state]` table.
-  `bin/lint-artefacts` enforces all of it, and closing an engagement deletes its
-  item or roll-up line in the closing commit, residue routed first.
+  costs a slot. Item headings carry a last-rewritten date; the lint warns about
+  a stale one on every commit, and a refresh re-reads the item against reality
+  rather than only bumping the date. A dormant open engagement (registry
+  `activity`) holds one roll-up line instead of an item; a no-topic subject
+  takes the `item-` prefix, whose slug is a permanent address; the mandatory
+  `## Next` list points at up to eight item slugs. Every cap reads from the
+  registry's `[state]` table. `bin/lint-artefacts` enforces all of it, and
+  closing an engagement deletes its item or roll-up line in the closing commit,
+  residue routed first.
 
 ## Working agreements
 
