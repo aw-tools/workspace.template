@@ -20,7 +20,10 @@
 # tracked subdirectory under a topic beyond those the registry declares (the
 # check reads tracked paths, not *.md, because a directory of .json/.txt is
 # invisible to a markdown glob), and every open engagement that has started
-# (holds a tracked file beyond its own plan or spec) holding a ledger-*.md.
+# (holds a tracked file beyond its own plan or spec) holding a ledger-*.md, and
+# STATE.md in shape: no fenced code blocks, open items in the four-field bullet
+# skeleton with 50-token caps, each item slug an open engagement unless it
+# carries 'Ledger: —'.
 # Contents of a declared subdirectory are not artefacts and are skipped by
 # every per-file check, as is everything under an agent-surface directory.
 # Non-blocking: lists ephemeral artefacts still open, and lists
@@ -274,6 +277,76 @@ printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 != "open" { print $2 }' | while r
             echo "$f: episodic artefact still 'open' under closed engagement '$name' (close it with the engagement)"
     done
 done | grep . && FAIL=1
+# STATE.md shape. Two rules read the file on disk in both modes, because the
+# singleton is always live. First: no fenced code blocks anywhere — verbatim
+# output belongs to the owning ledger. Second: every entry under '## Open
+# items' is the four-field bullet skeleton, with Now/Next/Blocked capped at 50
+# tokens each (a token is one whitespace-delimited field — a physical-line cap
+# would move with the formatter's column width) and Ledger one line; the
+# heading slug must name an open engagement unless the entry carries
+# 'Ledger: —', which is how closing an engagement forces its entry out in the
+# closing commit, residue routed first.
+STATE=context/STATE.md
+if [ -f "$STATE" ]; then
+    if grep -q '^[[:space:]]*```' "$STATE"; then
+        echo "$STATE: fenced code block — verbatim output belongs in the owning ledger"
+        FAIL=1
+    fi
+    # The shape rules only run inside the section they parse, so a renamed
+    # heading would silently disable every one of them; require it to exist.
+    if ! grep -Eq '^## ([0-9]+\. )?Open items' "$STATE"; then
+        echo "$STATE: no '## Open items' section — the shape rules did not run"
+        FAIL=1
+    fi
+    STATE_ITEMS=$(awk '
+        /^## / { initems = ($0 ~ /^## ([0-9]+\. )?Open items/); doflush(); next }
+        !initems { next }
+        /^### / { doflush(); slug = $2; f = ""; n = x = b = l = 0; next }
+        slug == "" { next }
+        /^- Now:/     { f = "n"; n += NF - 2; next }
+        /^- Next:/    { f = "x"; x += NF - 2; next }
+        /^- Blocked:/ { f = "b"; b += NF - 2; next }
+        /^- Ledger:/  { f = "l"; l++; if ($0 ~ /^- Ledger:[[:space:]]*—[[:space:]]*$/) nt = 1; next }
+        /^[[:space:]]+[^[:space:]]/ {
+            if      (f == "n") n += NF
+            else if (f == "x") x += NF
+            else if (f == "b") b += NF
+            else if (f == "l") l++
+            else print "BAD " slug ": free text outside the four fields"
+            next
+        }
+        /^[[:space:]]*$/ { next }
+        { print "BAD " slug ": free text outside the four fields" }
+        function doflush() {
+            if (slug == "") return
+            if (!n || !x || !b || !l)
+                print "BAD " slug ": missing field (need Now/Next/Blocked/Ledger)"
+            if (n > 50) print "BAD " slug ": Now exceeds 50 tokens (" n ")"
+            if (x > 50) print "BAD " slug ": Next exceeds 50 tokens (" x ")"
+            if (b > 50) print "BAD " slug ": Blocked exceeds 50 tokens (" b ")"
+            if (l > 1)  print "BAD " slug ": Ledger exceeds 1 line"
+            print (nt ? "NOTOPIC " : "SLUG ") slug
+            slug = ""; nt = 0
+        }
+        END { doflush() }
+    ' "$STATE")
+    printf '%s\n' "$STATE_ITEMS" | while read -r tag rest; do
+        case "$tag" in
+        BAD) echo "$STATE: item $rest" ;;
+        SLUG)
+            estatus=$(lookup ES "$rest")
+            [ "$estatus" = "open" ] ||
+                echo "$STATE: item '$rest' names an engagement that is not open (status: ${estatus:-unregistered}) — closing an engagement removes its item, residue routed first"
+            ;;
+        esac
+    done | grep . && FAIL=1
+    # The reverse coupling: an open engagement with no item is invisible to a
+    # resuming session.
+    printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 == "open" { print $2 }' | while read -r name; do
+        printf '%s\n' "$STATE_ITEMS" | grep -qx "SLUG $name" ||
+            echo "$STATE: open engagement '$name' has no item under Open items"
+    done | grep . && FAIL=1
+fi
 
 if [ -n "$OPEN_EPHEMERA" ]; then
     echo "warning: ephemeral artefacts still open (graduate or expire when their unit lands):" >&2

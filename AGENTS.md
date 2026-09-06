@@ -69,8 +69,15 @@ part of the work, not a report written afterwards.
   append-only), durable facts → `context/FINDINGS.md`, run detail → the
   engagement's ledger. If the owning topic has no ledger, **open one** —
   `STATE.md` is not a fallback home for run detail.
-- Record verification verbatim (command + output); rewrite stale sections rather
-  than layering corrections.
+- **Record verification verbatim in the owning engagement's ledger** (command +
+  output); `STATE.md` points at it, never quotes.
+- Rewrite, never append: an update replaces an item's fields with the present
+  state. If your edit only adds text, you are writing a changelog — stop and
+  rewrite.
+- **Open items keep the field shape** — Now / Next / Blocked / Ledger: Now, Next
+  and Blocked at most 50 tokens each, Ledger one line, plain language (template
+  in `context/artefacts.md`). `bin/lint-artefacts` enforces it; closing an
+  engagement removes its item in the closing commit, residue routed first.
 
 ## Working agreements
 
