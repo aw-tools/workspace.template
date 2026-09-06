@@ -276,10 +276,12 @@ status: open
 ### state — open-item entry
 
 `STATE.md` is a maintained singleton, but each entry under its `## Open items`
-section has a fixed shape, enforced by `bin/lint-artefacts`:
+section has a fixed shape, enforced by `bin/lint-artefacts` against the caps in
+the registry's `[state]` table (`max_items`, `field_tokens`, `rollup_tokens`,
+`next_entries`, `stale_days`; defaults 12, 50, 25, 8, 30):
 
 ```markdown
-### <engagement-slug>
+### <slug> (<YYYY-MM-DD, the date this entry was last rewritten>)
 
 - Now: <where it stands, present tense>
 - Next: <the immediate next action>
@@ -289,12 +291,43 @@ section has a fixed shape, enforced by `bin/lint-artefacts`:
   or — for a subject with no topic>
 ```
 
-Now, Next and Blocked carry at most 50 tokens each (a token is one
-whitespace-delimited field); Ledger is one line. The heading slug must name an
-open engagement in the registry unless the entry carries `Ledger: —` (a subject
-with no topic). Write fields in plain language — an engagement's own vocabulary
-stays in the plan or ledger the entry points at. No fenced code blocks anywhere
-in `STATE.md`: verbatim output belongs to the owning ledger.
+Now, Next and Blocked carry at most `field_tokens` tokens each (a token is one
+whitespace-delimited field); Ledger is one line. An item's subject is one live
+thread: an engagement carrying several independent threads holds several items,
+slugged `<engagement>/<thread>`, and the file holds at most `max_items` items in
+all, so a split costs a slot. The lint blocks an item whose date is older than
+`stale_days`; a legitimate refresh re-reads the item against reality and
+rewrites or confirms it — bumping the date without that re-check is
+date-washing, which turns the date into false certification.
+
+The heading slug (or its part before `/`) must name an open engagement in the
+registry whose `activity` is not `dormant`. A subject with no topic takes the
+reserved `item-` prefix and `Ledger: —`; the lint checks the two populations
+separately. An orphan item is a parking slot — four fields and no ledger. The
+moment work on it produces anything ledger-worthy, it graduates into an
+engagement of its own; all three exits — graduate, resolve in place, drop —
+delete the item in a commit, residue routed first. Its slug is a permanent
+address cited by other records: never renamed, never reused.
+
+An open engagement declared `activity = "dormant"` in the registry — nothing in
+flight to resume, and nothing queued that a session could start without a new
+trigger — holds no item. It appears instead as one undated line under
+`## Dormant engagements`, at most `rollup_tokens` tokens. The section itself is
+required only while a dormant open engagement exists — a workspace with none may
+omit it:
+
+```markdown
+- <engagement-slug>: <one clause> — <ledger, plan or spec path>
+```
+
+`STATE.md` also opens with a mandatory `## Next` section: an ordered list of at
+most `next_entries` lines, each naming an existing item slug plus a clause —
+pointers into the items, never new prose; the lint fails a line naming a slug
+that does not exist.
+
+Write fields in plain language — an engagement's own vocabulary stays in the
+plan or ledger the entry points at. No fenced code blocks anywhere in
+`STATE.md`: verbatim output belongs to the owning ledger.
 
 `decision` has no template: decisions are numbered entries in the `DECISIONS.md`
 register, whose header carries the entry discipline.

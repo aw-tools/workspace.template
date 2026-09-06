@@ -85,8 +85,24 @@ class = "ephemeral"
 home = "context/engagements"
 naming = "<engagement>/probe-<slug>.md"
 
+# The STATE.md shape's numbers. Every key is optional; the lint supplies these
+# same values as defaults when one is absent. A grown workspace raises its caps
+# here, in one reviewable line, instead of amending the lint.
+#
+# An engagement may declare activity = "active" | "dormant" (default active).
+# Dormant means nothing is in flight to resume and nothing is queued that a
+# session could start without a new trigger; it moves the engagement's
+# STATE.md presence from a full item to one roll-up line.
+[state]
+max_items = 12
+field_tokens = 50
+rollup_tokens = 25
+next_entries = 8
+stale_days = 30
+
 # Engagement register — empty on a fresh workspace. One entry per engagement:
 #
 # [engagements.<name>]
 # status = "open"      # open | closed | compacted
+# activity = "active"  # active | dormant, optional, default active
 # depends-on = []      # names of engagements this one depends on
