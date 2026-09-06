@@ -21,9 +21,13 @@
 # check reads tracked paths, not *.md, because a directory of .json/.txt is
 # invisible to a markdown glob), and every open engagement that has started
 # (holds a tracked file beyond its own plan or spec) holding a ledger-*.md, and
-# STATE.md in shape: no fenced code blocks, open items in the four-field bullet
-# skeleton with 50-token caps, each item slug an open engagement unless it
-# carries 'Ledger: —'.
+# STATE.md in shape: no fenced code blocks; a mandatory ordered §Next list
+# pointing at item slugs; open items in the dated four-field bullet skeleton,
+# token-capped, counted against a file cap and warned about when stale; item slugs
+# naming open non-dormant engagements (optionally <engagement>/<thread>) or
+# taking the item- prefix with 'Ledger: —'; dormant open engagements as
+# roll-up lines instead — every number read from the registry's [state] table
+# with defaults.
 # Contents of a declared subdirectory are not artefacts and are skipped by
 # every per-file check, as is everything under an agent-surface directory.
 # Non-blocking: lists ephemeral artefacts still open, and lists
@@ -50,13 +54,17 @@ esac
 
 # Flatten the registry into lookup lines:
 #   KC <kind> <class>   KH <kind> <home>   CS <class> <status...>
-#   ES <engagement> <status>   ED <engagement> <dep...>
-#   SD <subdirectory> <tracked>
+#   ES <engagement> <status>   ED <engagement> <dep...>   EA <engagement> <activity>
+#   SD <subdirectory> <tracked>   SC <state-key> <value>
 TABLE=$(awk '
     /^\[/ { gsub(/[][ ]/, ""); n = split($0, s, "."); type = s[1]; name = s[2]; next }
     /^class = / { gsub(/"/, ""); print "KC", name, $3 }
     /^home = /  { gsub(/"/, ""); print "KH", name, $3 }
     /^status = / { if (type == "engagements") { gsub(/"/, ""); print "ES", name, $3 } }
+    /^activity = / { if (type == "engagements") { gsub(/"/, ""); print "EA", name, $3 } }
+    /^(max_items|field_tokens|rollup_tokens|next_entries|stale_days) = / {
+        if (type == "state") print "SC", $1, $3
+    }
     /^tracked = / { if (type == "subdirectory") print "SD", name, $3 }
     /^statuses = / {
         line = $0
@@ -277,31 +285,84 @@ printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 != "open" { print $2 }' | while r
             echo "$f: episodic artefact still 'open' under closed engagement '$name' (close it with the engagement)"
     done
 done | grep . && FAIL=1
-# STATE.md shape. Two rules read the file on disk in both modes, because the
-# singleton is always live. First: no fenced code blocks anywhere — verbatim
-# output belongs to the owning ledger. Second: every entry under '## Open
-# items' is the four-field bullet skeleton, with Now/Next/Blocked capped at 50
-# tokens each (a token is one whitespace-delimited field — a physical-line cap
-# would move with the formatter's column width) and Ledger one line; the
-# heading slug must name an open engagement unless the entry carries
-# 'Ledger: —', which is how closing an engagement forces its entry out in the
-# closing commit, residue routed first.
+
+# STATE.md shape. The rules read the file on disk in both modes, because the
+# singleton is always live, and every number comes from the registry [state]
+# table with defaults supplied here. No fenced code blocks anywhere —
+# verbatim output belongs to the owning ledger. §Next is a mandatory ordered
+# list, capped in entries, each naming an existing item slug — pointers, never
+# prose. Every entry under '## Open items' is the four-field bullet skeleton
+# with token caps (a token is one whitespace-delimited field), a (YYYY-MM-DD)
+# last-rewritten date in the heading — warned about past stale_days, never
+# blocked: a block would fire on unrelated commits and invite date-bumping,
+# corrupting the very signal — and a slug that
+# names an open non-dormant engagement — optionally as <engagement>/<thread>,
+# several items per engagement — unless it takes the reserved item- prefix,
+# which requires 'Ledger: —' and marks a no-topic subject (its slug a
+# permanent address). A dormant open engagement holds one token-capped
+# roll-up line under '## Dormant engagements' instead of an item, and total
+# items are capped at max_items so a thread split costs a slot.
 STATE=context/STATE.md
 if [ -f "$STATE" ]; then
+    state_cfg() {
+        printf '%s\n' "$TABLE" | awk -v k="$1" -v d="$2" '
+            BEGIN { v = d } $1 == "SC" && $2 == k { v = $3 } END { print v }'
+    }
+    MAX_ITEMS=$(state_cfg max_items 12)
+    FIELD_TOKENS=$(state_cfg field_tokens 50)
+    ROLLUP_TOKENS=$(state_cfg rollup_tokens 25)
+    NEXT_ENTRIES=$(state_cfg next_entries 8)
+    STALE_DAYS=$(state_cfg stale_days 30)
+
     if grep -q '^[[:space:]]*```' "$STATE"; then
         echo "$STATE: fenced code block — verbatim output belongs in the owning ledger"
         FAIL=1
     fi
-    # The shape rules only run inside the section they parse, so a renamed
-    # heading would silently disable every one of them; require it to exist.
-    if ! grep -Eq '^## ([0-9]+\. )?Open items' "$STATE"; then
-        echo "$STATE: no '## Open items' section — the shape rules did not run"
-        FAIL=1
-    fi
-    STATE_ITEMS=$(awk '
-        /^## / { initems = ($0 ~ /^## ([0-9]+\. )?Open items/); doflush(); next }
+    # The shape rules only run inside the sections they parse, so a renamed
+    # heading would silently disable them; require each to exist. §Dormant
+    # engagements is required only by the coupling below, once a dormant open
+    # engagement exists.
+    for sec in 'Open items' 'Next'; do
+        grep -Eq "^## ([0-9]+\. )?$sec\$" "$STATE" || {
+            echo "$STATE: no '## $sec' section — the shape rules did not run"
+            FAIL=1
+        }
+    done
+    STATE_ITEMS=$(awk -v ftok="$FIELD_TOKENS" -v rtok="$ROLLUP_TOKENS" \
+        -v nmax="$NEXT_ENTRIES" -v imax="$MAX_ITEMS" -v stale="$STALE_DAYS" \
+        -v today="$(date +%Y-%m-%d)" '
+        # Days since an ISO date, via Julian day numbers — pure arithmetic, so
+        # it needs neither GNU date nor gawk mktime.
+        function jdn(ds,    p, a, y, m) {
+            split(ds, p, "-")
+            a = int((14 - p[2]) / 12); y = p[1] + 4800 - a; m = p[2] + 12 * a - 3
+            return p[3] + int((153 * m + 2) / 5) + 365 * y + int(y / 4) - \
+                int(y / 100) + int(y / 400) - 32045
+        }
+        BEGIN { tj = jdn(today) }
+        /^## / {
+            doflush(); rflush()
+            innext  = ($0 ~ /^## ([0-9]+\. )?Next$/)
+            initems = ($0 ~ /^## ([0-9]+\. )?Open items$/)
+            indorm  = ($0 ~ /^## ([0-9]+\. )?Dormant engagements$/)
+            next
+        }
+        innext {
+            if ($0 ~ /^[0-9]+\. /)                              { nref++; print "NEXTREF " $2; next }
+            if ($0 ~ /^[[:space:]]+[^[:space:]]/ && nref)       next
+            if ($0 ~ /^[[:space:]]*$/)                          next
+            print "BAD §Next: free text outside the ordered list"
+            next
+        }
+        indorm {
+            if ($0 ~ /^- [a-z0-9-]+:/) { rflush(); rslug = $2; sub(/:$/, "", rslug); rn = NF - 1; next }
+            if ($0 ~ /^[[:space:]]+[^[:space:]]/ && rslug != "") { rn += NF; next }
+            if ($0 ~ /^[[:space:]]*$/)                          next
+            print "BAD §Dormant engagements: line is not a roll-up bullet"
+            next
+        }
         !initems { next }
-        /^### / { doflush(); slug = $2; f = ""; n = x = b = l = 0; next }
+        /^### / { doflush(); slug = $2; d = $3; gsub(/[()]/, "", d); f = ""; n = x = b = l = 0; next }
         slug == "" { next }
         /^- Now:/     { f = "n"; n += NF - 2; next }
         /^- Next:/    { f = "x"; x += NF - 2; next }
@@ -317,40 +378,92 @@ if [ -f "$STATE" ]; then
         }
         /^[[:space:]]*$/ { next }
         { print "BAD " slug ": free text outside the four fields" }
-        function doflush() {
+        function doflush(    age, base) {
             if (slug == "") return
             if (!n || !x || !b || !l)
                 print "BAD " slug ": missing field (need Now/Next/Blocked/Ledger)"
-            if (n > 50) print "BAD " slug ": Now exceeds 50 tokens (" n ")"
-            if (x > 50) print "BAD " slug ": Next exceeds 50 tokens (" x ")"
-            if (b > 50) print "BAD " slug ": Blocked exceeds 50 tokens (" b ")"
+            if (n > ftok) print "BAD " slug ": Now exceeds " ftok " tokens (" n ")"
+            if (x > ftok) print "BAD " slug ": Next exceeds " ftok " tokens (" x ")"
+            if (b > ftok) print "BAD " slug ": Blocked exceeds " ftok " tokens (" b ")"
             if (l > 1)  print "BAD " slug ": Ledger exceeds 1 line"
-            print (nt ? "NOTOPIC " : "SLUG ") slug
-            slug = ""; nt = 0
+            if (d !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)
+                print "BAD " slug ": heading carries no (YYYY-MM-DD) last-rewritten date"
+            else {
+                age = tj - jdn(d)
+                if (age > stale) print "STALE " slug " " age
+            }
+            if (slug ~ /^item-/) {
+                if (nt) print "NOTOPIC " slug
+                else print "BAD " slug ": item- prefix without Ledger: —"
+            } else if (nt) {
+                print "BAD " slug ": Ledger: — on an unprefixed slug — a no-topic subject takes the item- prefix"
+            } else {
+                base = slug; sub(/\/.*/, "", base)
+                print "SLUG " base
+            }
+            print "ITEM " slug
+            items++
+            slug = ""; nt = 0; d = ""
         }
-        END { doflush() }
+        function rflush() {
+            if (rslug == "") return
+            if (rn > rtok)
+                print "BAD " rslug ": roll-up line exceeds " rtok " tokens (" rn ")"
+            print "ROLLUP " rslug
+            rslug = ""; rn = 0
+        }
+        END {
+            doflush(); rflush()
+            if (items > imax)
+                print "BAD file: " items " items exceed the max_items cap (" imax ") — a slot must be earned"
+            if (nref > nmax)
+                print "BAD §Next: " nref " entries exceed the next_entries cap (" nmax ")"
+        }
     ' "$STATE")
     printf '%s\n' "$STATE_ITEMS" | while read -r tag rest; do
         case "$tag" in
-        BAD) echo "$STATE: item $rest" ;;
+        BAD) echo "$STATE: $rest" ;;
         SLUG)
             estatus=$(lookup ES "$rest")
-            [ "$estatus" = "open" ] ||
+            if [ "$estatus" != "open" ]; then
                 echo "$STATE: item '$rest' names an engagement that is not open (status: ${estatus:-unregistered}) — closing an engagement removes its item, residue routed first"
+            elif [ "$(lookup EA "$rest")" = "dormant" ]; then
+                echo "$STATE: item '$rest' names a dormant engagement — one roll-up line under §Dormant engagements instead"
+            fi
+            ;;
+        ROLLUP)
+            estatus=$(lookup ES "$rest")
+            if [ "$estatus" != "open" ]; then
+                echo "$STATE: roll-up '$rest' names an engagement that is not open (status: ${estatus:-unregistered}) — closing an engagement removes its line, residue routed first"
+            elif [ "$(lookup EA "$rest")" != "dormant" ]; then
+                echo "$STATE: roll-up '$rest' names an engagement the registry does not declare dormant — an active engagement holds an item"
+            fi
+            ;;
+        NEXTREF)
+            printf '%s\n' "$STATE_ITEMS" | grep -qx "ITEM $rest" ||
+                echo "$STATE: §Next names '$rest', which is no item slug — a stale priority"
             ;;
         esac
     done | grep . && FAIL=1
-    # The reverse coupling: an open engagement with no item is invisible to a
-    # resuming session.
+    # Staleness warns, never blocks: a block would fire on whoever commits
+    # next and invite a date bump without a real re-read.
+    STALE_LINES=$(printf '%s\n' "$STATE_ITEMS" | awk '$1 == "STALE" { print "  " $2 " (" $3 " days)" }')
+    if [ -n "$STALE_LINES" ]; then
+        echo "warning: stale open items — re-read each against reality and rewrite or confirm it; if the refresh is real work, route it into §Next:" >&2
+        printf '%s\n' "$STALE_LINES" >&2
+    fi
+    # The reverse coupling: an open engagement absent from both tiers is
+    # invisible to a resuming session — the same gap that once let a run go
+    # unrecorded.
     printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 == "open" { print $2 }' | while read -r name; do
-        printf '%s\n' "$STATE_ITEMS" | grep -qx "SLUG $name" ||
-            echo "$STATE: open engagement '$name' has no item under Open items"
+        if [ "$(lookup EA "$name")" = "dormant" ]; then
+            printf '%s\n' "$STATE_ITEMS" | grep -qx "ROLLUP $name" ||
+                echo "$STATE: dormant open engagement '$name' has no roll-up line under §Dormant engagements"
+        else
+            printf '%s\n' "$STATE_ITEMS" | grep -qx "SLUG $name" ||
+                echo "$STATE: open engagement '$name' has no item under Open items"
+        fi
     done | grep . && FAIL=1
-fi
-
-if [ -n "$OPEN_EPHEMERA" ]; then
-    echo "warning: ephemeral artefacts still open (graduate or expire when their unit lands):" >&2
-    for f in $OPEN_EPHEMERA; do echo "  $f" >&2; done
 fi
 
 # Untracked *.md at the root or under context/: the checks above enumerate
@@ -368,6 +481,11 @@ for f in $CANDIDATES; do
     [ -z "$(nonentity_subdir "$f")" ] || continue
     git ls-files --error-unmatch -- "$f" > /dev/null 2>&1 || UNTRACKED_MD="$UNTRACKED_MD $f"
 done
+
+if [ -n "$OPEN_EPHEMERA" ]; then
+    echo "warning: ephemeral artefacts still open (graduate or expire when their unit lands):" >&2
+    for f in $OPEN_EPHEMERA; do echo "  $f" >&2; done
+fi
 
 if [ -n "$UNTRACKED_MD" ]; then
     echo "warning: untracked artefacts (invisible to every check above until 'git add'):" >&2

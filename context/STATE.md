@@ -27,9 +27,17 @@ Blocked carry at most 50 tokens each, Ledger one line (template in
 external gate or dependency the item waits on, never a restatement of Next.
 Order items by liveness — in flight first, ready next, parked or gated after,
 no-topic subjects last. The caps bound each item, not how many there are, so
-total length is held by discipline alone. Closing an engagement deletes its item
-in the closing commit, residue routed first. A subject with no topic may hold an
-item with `Ledger: —`.
+total item count is held by the registry's `[state]` cap instead. Each item
+heading carries a `(YYYY-MM-DD)` last-rewritten date; past the registry's
+staleness cap the lint warns on every commit until the item is genuinely
+rewritten, and a refresh that turns out to be real work earns a `## Next`
+pointer. A refresh re-reads the item against reality rather than only bumping
+the date. Closing an engagement deletes its item in the closing commit, residue
+routed first. A subject with no topic takes the `item-` prefix and `Ledger: —`.
+A dormant open engagement (the registry's `activity` field) holds one roll-up
+line under `## Dormant engagements` instead of an item. The `## Next` section is
+a mandatory ordered list pointing at existing item slugs — priorities, not new
+prose.
 
 ## Where things stand
 
@@ -39,15 +47,6 @@ item with `Ledger: —`.
 
 <The handful of artefacts a fresh session should open, in order.>
 
+## Next
+
 ## Open items
-
-<One entry per open engagement, in the four-field shape; Ledger names the
-engagement's ledger, or its plan or spec while no ledger exists, or — for a
-subject with no topic:>
-
-### <engagement-slug>
-
-- Now: <where it stands, present tense>
-- Next: <the immediate next action>
-- Blocked: <gate or dependency, or —>
-- Ledger: —
