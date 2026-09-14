@@ -1,0 +1,221 @@
+#!/bin/sh
+#
+# Changelog lint — enforces that a governed change to this template carries a
+# CHANGELOG.md entry, and that the entry ids stay sound. What a governed change
+# is, and what an entry looks like, are defined in CHANGELOG.md; the replay
+# procedure an instance follows is in CONTRACT.md.
+#
+# Usage:
+#   bin/lint-changelog                check origin/main...HEAD
+#   bin/lint-changelog <range>        check an explicit range (A..B or A...B)
+#
+# Checks (blocking, both reported on stderr):
+#   1. A range touching a governed path adds at least one new entry. The
+#      governed set is derived, never restated: everything the range touches,
+#      minus what .seedignore excludes, minus the seed-only skeletons listed
+#      below. A second hardcoded list of governed paths would drift from
+#      .seedignore the first time somebody adds an exclusion, and a checker
+#      that is wrong about its own subject is worse than none.
+#   2. Entry ids under '## Entries' are plain unpadded integers, unique, and
+#      descend down the file, because entries are listed newest first. An empty
+#      entries section passes.
+#
+# Check 1 compares the two ends of the range. Check 2 reads CHANGELOG.md from
+# the working tree, which under continuous integration is the merge result
+# being validated.
+#
+# This script is listed in .seedignore, so no instance ever receives it, and it
+# runs in continuous integration only (.github/workflows/ci.yml). It is
+# deliberately absent from .githooks/pre-commit: that hook is governed, seeded
+# into every instance, so a call there would install a guard for a script and a
+# changelog an instance does not have. Every governed change to this repository
+# arrives by pull request, so continuous integration sees all of them.
+#
+# Zero dependencies beyond POSIX sh, awk, and git.
+#
+# Exit codes: 0 clean, 1 findings, 2 usage/parse error.
+
+set -u
+
+CHANGELOG="CHANGELOG.md"
+SEEDIGNORE=".seedignore"
+DEFAULT_RANGE="origin/main...HEAD"
+USAGE="usage: bin/lint-changelog [<commit-range>]"
+
+# Seed-only skeletons: tracked, surviving materialisation, yet not governed.
+# An instance owns its copy from the moment it is created and never syncs it
+# again, so a change here has nothing to migrate. Each entry earns its place:
+#   workspace.toml        the instance's own manifest — its member repositories
+#                         and its provenance, nothing to do with the template's.
+#   README.md             describes the instance, and is rewritten on day one.
+#   tmp/.keep             a marker holding an untracked scratch directory open;
+#                         it has no content to carry across.
+#   the four registers    STATE, DECISIONS, FINDINGS and NOTES ship as
+#                         skeletons: headings and entry discipline, no content.
+#                         An instance fills them with its own record from its
+#                         first session, so the template's copy is a starting
+#                         point and never a source.
+SEED_ONLY="workspace.toml
+README.md
+tmp/.keep
+context/STATE.md
+context/DECISIONS.md
+context/FINDINGS.md
+context/NOTES.md"
+
+# Entry ids in file order, one per line, from a named file or from stdin.
+entry_ids() {
+    awk '
+        /^## / { inentries = ($0 ~ /^##[[:space:]]+Entries[[:space:]]*$/); next }
+        !inentries { next }
+        /^###[[:space:]]/ {
+            line = $0
+            sub(/^###[[:space:]]+/, "", line)
+            sub(/[[:space:]].*$/, "", line)
+            print line
+        }
+    ' "$@"
+}
+
+[ -f "$CHANGELOG" ] || { echo "error: $CHANGELOG not found (run from the repository root)" >&2; exit 2; }
+[ -f "$SEEDIGNORE" ] || { echo "error: $SEEDIGNORE not found (run from the repository root)" >&2; exit 2; }
+
+[ "$#" -le 1 ] || { echo "$USAGE" >&2; exit 2; }
+case "${1:-}" in
+"") RANGE="$DEFAULT_RANGE" ;;
+-*) echo "$USAGE" >&2; exit 2 ;;
+*) RANGE="$1" ;;
+esac
+
+case "$RANGE" in
+*...*) BASE_REV="${RANGE%%...*}"; HEAD_REV="${RANGE#*...}"; MERGE_BASE=1 ;;
+*..*) BASE_REV="${RANGE%%..*}"; HEAD_REV="${RANGE#*..}"; MERGE_BASE=0 ;;
+*) echo "error: '$RANGE' is not a commit range (expected A..B or A...B)" >&2; exit 2 ;;
+esac
+[ -n "$HEAD_REV" ] || HEAD_REV="HEAD"
+[ -n "$BASE_REV" ] || { echo "error: '$RANGE' names no base commit (expected A..B or A...B)" >&2; exit 2; }
+
+resolve() {
+    git rev-parse --verify --quiet "$1^{commit}" && return 0
+    echo "error: cannot resolve '$1' to a commit — pass a range this checkout has the history for" >&2
+    return 2
+}
+
+BASE=$(resolve "$BASE_REV") || exit 2
+HEAD=$(resolve "$HEAD_REV") || exit 2
+if [ "$MERGE_BASE" = 1 ]; then
+    BASE=$(git merge-base "$BASE" "$HEAD") || {
+        echo "error: '$BASE_REV' and '$HEAD_REV' share no merge base" >&2
+        exit 2
+    }
+fi
+
+# .seedignore is gitignore syntax. This implements the subset the file uses —
+# comments, blank lines, literal paths, an optional leading slash to anchor and
+# an optional trailing slash for a directory — and refuses anything else rather
+# than guessing at it. Guessing wrong in the permissive direction silently
+# shrinks the governed set, which is the one failure this lint must not have.
+seedignore_match() {
+    _path="$1"
+    while IFS= read -r _pat || [ -n "$_pat" ]; do
+        case "$_pat" in
+        "" | "#"*) continue ;;
+        *[!-A-Za-z0-9._/]*)
+            echo "error: $SEEDIGNORE pattern '$_pat' uses gitignore syntax this lint does not implement (globs, negation, character classes) — teach bin/lint-changelog the pattern before adding it" >&2
+            exit 2
+            ;;
+        esac
+
+        _anchored=0
+        case "$_pat" in /*) _anchored=1 ;; esac
+        _p="${_pat#/}"
+        _dironly=0
+        case "$_p" in */) _dironly=1 ;; esac
+        _p="${_p%/}"
+        [ -n "$_p" ] || continue
+        case "$_p" in */*) _anchored=1 ;; esac
+
+        # An exact match only counts for a pattern that may name a file.
+        if [ "$_dironly" = 0 ] && [ "$_path" = "$_p" ]; then
+            return 0
+        fi
+        # Matching a directory carries everything beneath it.
+        case "$_path" in "$_p"/*) return 0 ;; esac
+        # A pattern with no slash matches at any depth, not only at the root.
+        if [ "$_anchored" = 0 ]; then
+            case "$_path" in */"$_p"/*) return 0 ;; esac
+            if [ "$_dironly" = 0 ]; then
+                case "$_path" in */"$_p") return 0 ;; esac
+            fi
+        fi
+    done < "$SEEDIGNORE"
+    return 1
+}
+
+seed_only_match() {
+    for _skeleton in $SEED_ONLY; do
+        [ "$1" = "$_skeleton" ] && return 0
+    done
+    return 1
+}
+
+FAIL=0
+
+# Check 1 — a governed change carries an entry.
+CHANGED=$(git diff --name-only --no-renames "$BASE" "$HEAD" --) || exit 2
+GOVERNED=""
+for path in $CHANGED; do
+    seedignore_match "$path" && continue
+    seed_only_match "$path" && continue
+    GOVERNED="$GOVERNED
+$path"
+done
+
+BASE_IDS=$(git show "$BASE:$CHANGELOG" 2> /dev/null | entry_ids)
+HEAD_IDS=$(git show "$HEAD:$CHANGELOG" 2> /dev/null | entry_ids)
+NEW_IDS=""
+for id in $HEAD_IDS; do
+    printf '%s\n' "$BASE_IDS" | grep -qx -- "$id" || NEW_IDS="$NEW_IDS $id"
+done
+
+if [ -n "$GOVERNED" ] && [ -z "$NEW_IDS" ]; then
+    {
+        echo "$CHANGELOG: no new entry, but the range touches governed paths:"
+        for path in $GOVERNED; do echo "  $path"; done
+        echo "add one entry per governed change, in the format $CHANGELOG describes, carrying the migration steps an instance follows"
+    } >&2
+    FAIL=1
+fi
+
+# Check 2 — entry ids are sound.
+IDS=$(entry_ids "$CHANGELOG")
+prev=""
+for id in $IDS; do
+    case "$id" in
+    *[!0-9]*)
+        echo "$CHANGELOG: entry id '$id' is not a plain integer — headings read '### N — <imperative summary>'" >&2
+        FAIL=1
+        prev=""
+        continue
+        ;;
+    0 | 0*)
+        echo "$CHANGELOG: entry id '$id' is zero or zero-padded — ids start at 1 and carry no padding, so an instance's 'applied' marker stays a TOML integer" >&2
+        FAIL=1
+        prev=""
+        continue
+        ;;
+    esac
+    if [ -n "$prev" ] && [ "$id" -gt "$prev" ]; then
+        echo "$CHANGELOG: entry id $id sits below $prev — entries are listed newest first, so ids descend down the file" >&2
+        FAIL=1
+    fi
+    prev="$id"
+done
+
+DUPLICATES=$(printf '%s\n' "$IDS" | grep -x '[0-9][0-9]*' | sort -n | uniq -d)
+for id in $DUPLICATES; do
+    echo "$CHANGELOG: entry id $id appears more than once — an id is never reused and never renumbered" >&2
+    FAIL=1
+done
+
+exit $FAIL

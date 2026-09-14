@@ -16,6 +16,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history: the changelog lint diffs a pull request against its
+          # base, which a shallow checkout cannot reach.
+          fetch-depth: 0
 
       - name: Install dprint
         run: |
@@ -26,10 +30,21 @@ jobs:
         run: dprint check
 
       - name: Check shell scripts
-        run: shellcheck bin/bootstrap bin/install-hooks bin/lint-artefacts .githooks/pre-commit
+        run: shellcheck bin/bootstrap bin/install-hooks bin/lint-artefacts bin/lint-changelog .githooks/pre-commit
 
       - name: Lint artefacts
         run: bin/lint-artefacts --all
+
+      # Continuous integration is the only place this runs. The pre-commit hook
+      # is seeded into every instance, so a call from there would guard a script
+      # and a changelog no instance has. Every change here arrives by pull
+      # request, so nothing escapes the check.
+      - name: Lint changelog
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bin/lint-changelog "$BASE_SHA...$HEAD_SHA"
 
       - name: Validate template contract
         run: |
