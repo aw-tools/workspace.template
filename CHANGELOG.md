@@ -30,9 +30,8 @@ order, with no skipping.
 ## Baseline
 
 No history is retro-filled. An instance's baseline is derived from its recorded
-provenance, not assumed to be zero: `aw init` writes a `[template]` block into
-the materialised instance's `workspace.toml`, recording the template `url`, the
-`ref` as typed, and the resolved commit `sha`.
+provenance, not assumed to be zero. The `Recorded provenance` section of
+[`CONTRACT.md`](CONTRACT.md) owns the fields `aw init` records.
 
 An instance whose manifest carries no `applied` marker takes as its baseline the
 newest entry id present in the template at its recorded `sha` — everything at or
