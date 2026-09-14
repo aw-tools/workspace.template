@@ -130,6 +130,12 @@ templates, `bin/lint-artefacts` enforces both at commit time.
   registry status leaves `open`, every plan, spec, and ledger in its directory
   moves to `closed` in the same commit; the lint blocks a closed engagement that
   still holds an `open` episodic artefact.
+- **Every engagement declares its `remits`** — the standing areas of
+  responsibility its work counts against, as a list in the registry; `[]` is a
+  deliberate "none", absence is an error. A thread leaves its engagement when it
+  acquires a plan, spec, deliverable or external counterpart of its own, and the
+  spin-off starts with the parent's remits. `bin/lint-artefacts --remits` lists
+  engagements by remit.
 
 ## Formatting
 

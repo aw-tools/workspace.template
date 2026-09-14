@@ -82,6 +82,54 @@ scope.
 
 ## Entries
 
-No entries exist yet. The first entry accompanies the next governed change to
-this template. The first entry replaces this paragraph; each later entry is
-added above the previous newest.
+### 1 — Require `remits` on every engagement register entry
+
+- **Date:** 2026-09-14
+- **Template ref:** `feat/engagement-remits`
+- **Paths:** `context/artefacts.toml`, `bin/lint-artefacts`,
+  `context/artefacts.md`, `AGENTS.md`
+- **Kind:** `replace` for `bin/lint-artefacts`; `adapt` for
+  `context/artefacts.toml`, `context/artefacts.md` and `AGENTS.md`
+- **Change:** Engagements now declare `remits`, a multi-valued tag naming the
+  standing areas of responsibility their work counts against. Spin-offs
+  accumulate and nothing records that they belong to the same area, so
+  collecting past work on one is a memory exercise. The key is required on every
+  entry, open or closed: an explicit `[]` turns an omission into a decision.
+  `bin/lint-artefacts --remits` lists the register keyed by remit.
+- **Migration:**
+  1. Copy this template's `bin/lint-artefacts` over yours and strip the
+     `(decision NNN)` citations, substituting your own register's numbers or
+     omitting them. If your copy has diverged, see the note below instead.
+  2. Add the `remits = []` line to the engagement-register comment block in your
+     `context/artefacts.toml`, matching this template's.
+  3. Choose your vocabulary before touching a single entry, and record it in
+     your decisions register: nothing in the model stores it and the lint cannot
+     check membership against it. This template's `context/artefacts.md` carries
+     the guidance on picking names; two to four is the expected size.
+  4. Backfill every entry in your register, open and closed alike, in one
+     commit. Read each engagement's ledger or plan before tagging it rather than
+     inferring from the slug; an engagement genuinely under no standing area
+     takes `remits = []`, which is a decision, not a skip. The array goes on one
+     line, the same constraint `depends-on` already carries.
+  5. Add the `Remits — what an engagement counts against` section to your
+     `context/artefacts.md`, after `Routing — the subject owns the record`. The
+     definition sentence and the thread-split rule are quoted verbatim in this
+     template's copy; take them as they stand.
+  6. Add the remits bullet to your workspace instructions, after the bullet on
+     closing an engagement's episodic artefacts.
+- **Already applied when:** `grep -q '^remits = ' context/artefacts.toml` finds
+  a line and `bin/lint-artefacts --remits` exits 0 with a listing rather than a
+  usage error. On a register with no engagements the first test fails and the
+  second is the whole check.
+- **Verify:** `bin/lint-artefacts --all` exits 0, and
+  `bin/lint-artefacts --remits` lists every engagement in your register at least
+  once — engagements with an empty list appear under the literal remit `-`, so
+  the line count equals the entry count plus one per extra remit. Removing any
+  one entry's `remits` key makes `--all` exit non-zero naming that entry.
+- **If your copy has diverged:** instances commonly edit `bin/lint-artefacts`.
+  Preserve your own checks and take four things from this template's version
+  regardless: the `ER` line in the registry-flattening awk pass, the
+  presence-and-shape check that follows the `depends-on` check, the `--remits`
+  mode and its entry in the argument dispatch, and the first-appearance notice
+  among the trailing stderr warnings. The notice must stay non-blocking — it
+  must never touch `FAIL`.
