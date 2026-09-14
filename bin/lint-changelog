@@ -66,6 +66,8 @@ context/NOTES.md"
 # Entry ids in file order, one per line, from a named file or from stdin.
 entry_ids() {
     awk '
+        /^(```|~~~)/ { fence = !fence; next }
+        fence { next }
         /^## / { inentries = ($0 ~ /^##[[:space:]]+Entries[[:space:]]*$/); next }
         !inentries { next }
         /^###[[:space:]]/ {
@@ -164,24 +166,36 @@ FAIL=0
 # Check 1 — a governed change carries an entry.
 CHANGED=$(git diff --name-only --no-renames "$BASE" "$HEAD" --) || exit 2
 GOVERNED=""
+_oldifs=$IFS
+IFS='
+'
+set -f
 for path in $CHANGED; do
     seedignore_match "$path" && continue
     seed_only_match "$path" && continue
     GOVERNED="$GOVERNED
 $path"
 done
+IFS=$_oldifs
+set +f
 
 BASE_IDS=$(git show "$BASE:$CHANGELOG" 2> /dev/null | entry_ids)
 HEAD_IDS=$(git show "$HEAD:$CHANGELOG" 2> /dev/null | entry_ids)
 NEW_IDS=""
 for id in $HEAD_IDS; do
-    printf '%s\n' "$BASE_IDS" | grep -qx -- "$id" || NEW_IDS="$NEW_IDS $id"
+    printf '%s\n' "$BASE_IDS" | grep -qxF -- "$id" || NEW_IDS="$NEW_IDS $id"
 done
 
 if [ -n "$GOVERNED" ] && [ -z "$NEW_IDS" ]; then
     {
         echo "$CHANGELOG: no new entry, but the range touches governed paths:"
+        _oldifs=$IFS
+        IFS='
+'
+        set -f
         for path in $GOVERNED; do echo "  $path"; done
+        IFS=$_oldifs
+        set +f
         echo "add one entry per governed change, in the format $CHANGELOG describes, carrying the migration steps an instance follows"
     } >&2
     FAIL=1
