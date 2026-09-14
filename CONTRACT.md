@@ -52,8 +52,8 @@ gitignore-style patterns, one per line. During materialisation, `aw init`
 removes matching paths and then removes `.seedignore` itself.
 
 This template's live `.seedignore` is the reference example. It excludes its
-repository CI, `CONTRACT.md`, and `.seedignore` while allowing formatting
-configuration and hooks to propagate.
+repository CI, `CHANGELOG.md`, `CONTRACT.md`, and `.seedignore` while allowing
+formatting configuration and hooks to propagate.
 
 ## Recorded provenance
 
@@ -65,7 +65,7 @@ the template does not ship this block:
 url = "<template URL>"
 ref = "<ref as typed>"
 sha = "<resolved commit SHA>"
-applied = <entry id>
+applied = <entry id>  # not written by aw init today; see below
 ```
 
 `applied` is the newest changelog entry the instance has applied. It is a plain
@@ -98,9 +98,13 @@ by replaying the entries it has not applied yet, oldest first. Neither the
 changelog nor this document is materialised, so an instance reads both from the
 template repository rather than from its own tree.
 
-1. **Fetch the template** at the `url` your `workspace.toml`'s `[template]`
-   block records. You need it before anything else, because the starting point
-   is read out of the template's own history. If the whole `[template]` block is
+1. **Clone the template** at the `url` your `workspace.toml`'s `[template]`
+   block records, into untracked scratch — `tmp/` in your workspace is the
+   intended home — or fetch into that clone if one survives from a previous
+   replay. Clone with full history, not a shallow clone, because the starting
+   point is read out of a past commit. Delete the clone once the replay
+   finishes. You need it before anything else, because the starting point is
+   read out of the template's own history. If the whole `[template]` block is
    absent, the workspace was built by hand rather than by `aw init` and there is
    no provenance to fetch from: say so, and settle the starting point with the
    human before replaying anything.
@@ -114,8 +118,8 @@ template repository rather than from its own tree.
    entries above your starting point**, in ascending id order. Do not skip one,
    and do not reorder.
 4. **For each entry, in order:**
-   - run its `Already applied when` test; if it passes, the entry is done, so
-     move on to the next one;
+   - run its `Already applied when` test; if it passes, the entry is already in
+     your copy, so make no changes and go straight to setting `applied` below;
    - otherwise carry out its `Migration` steps. `Kind: replace` means copy the
      template's version of the file, then strip the `(decision NNN)` citations,
      which address the template's own register and mean nothing in yours:
@@ -124,7 +128,8 @@ template repository rather than from its own tree.
      must hold afterwards;
    - run its `Verify` check and confirm it passes;
    - set `applied` to that entry's id in your `workspace.toml`, and commit
-     before starting the next entry.
+     before starting the next entry; if you skipped the entry, that marker bump
+     is the whole commit.
 5. **Stop and ask the human** whenever an entry's `If your copy has diverged`
    note applies to your copy, and whenever a `Verify` check fails. Do not
    improvise past either.
