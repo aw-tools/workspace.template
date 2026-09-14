@@ -106,3 +106,5 @@ stale_days = 30
 # status = "open"      # open | closed | compacted
 # activity = "active"  # active | dormant, optional, default active
 # depends-on = []      # names of engagements this one depends on
+# remits = []          # standing areas of responsibility this work counts
+#                      # against; required; [] means "none, deliberately"

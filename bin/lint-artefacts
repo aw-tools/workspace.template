@@ -16,7 +16,9 @@
 # context/archive/ for a closed one, never the other way round. Registry checks
 # (both modes): every engagement directory registered under whichever tree
 # matches its status, every open engagement present on disk, every depends-on
-# target registered, no closed engagement holding an open episodic artefact, no
+# target registered, every engagement declaring `remits` (an explicit [] is
+# legal, an absent key is not) in kebab-case with no duplicate value, no closed
+# engagement holding an open episodic artefact, no
 # tracked subdirectory under a topic beyond those the registry declares (the
 # check reads tracked paths, not *.md, because a directory of .json/.txt is
 # invisible to a markdown glob), and every open engagement that has started
@@ -30,12 +32,18 @@
 # with defaults.
 # Contents of a declared subdirectory are not artefacts and are skipped by
 # every per-file check, as is everything under an agent-surface directory.
-# Non-blocking: lists ephemeral artefacts still open, and lists
+# Non-blocking: notices a remit value entering the register for the first time
+# (staged mode only — the one moment a typo is cheap to catch, with no declared
+# vocabulary to check membership against), lists ephemeral artefacts still open,
+# and lists
 # any *.md under the workspace root or context/ (outside tmp/) that git does not
 # track — every check above reads tracked or staged paths only, so an untracked
 # artefact is otherwise invisible by construction. Zero dependencies beyond
 # POSIX sh, awk, and git — the registry TOML is a deliberately flat subset kept
 # stable by dprint.
+#
+# A third mode, --remits [<remit>], is a read-only listing of the engagement
+# register keyed by remit rather than a check: stdout only, no staged read.
 #
 # Exit codes: 0 clean, 1 findings, 2 usage/registry error.
 
@@ -46,16 +54,21 @@ ENGAGEMENTS_DIR="context/engagements"
 ARCHIVE_DIR="context/archive"
 [ -f "$REGISTRY" ] || { echo "error: $REGISTRY not found (run from the repository root)" >&2; exit 2; }
 
-case "${1:-}" in
-"") FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.md') ;;
---all) FILES=$(git ls-files -- '*.md') ;;
-*) echo "usage: bin/lint-artefacts [--all]" >&2; exit 2 ;;
+usage() { echo "usage: bin/lint-artefacts [--all | --remits [<remit>]]" >&2; exit 2; }
+
+MODE="${1:-}"
+REMIT_FILTER="${2:-}"
+case "$MODE" in
+"") [ $# -le 0 ] || usage; FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.md') ;;
+--all) [ $# -le 1 ] || usage; FILES=$(git ls-files -- '*.md') ;;
+--remits) [ $# -le 2 ] || usage; FILES="" ;;
+*) usage ;;
 esac
 
 # Flatten the registry into lookup lines:
 #   KC <kind> <class>   KH <kind> <home>   CS <class> <status...>
 #   ES <engagement> <status>   ED <engagement> <dep...>   EA <engagement> <activity>
-#   SD <subdirectory> <tracked>   SC <state-key> <value>
+#   ER <engagement> <remit...>   SD <subdirectory> <tracked>   SC <state-key> <value>
 TABLE=$(awk '
     /^\[/ { gsub(/[][ ]/, ""); n = split($0, s, "."); type = s[1]; name = s[2]; next }
     /^class = / { gsub(/"/, ""); print "KC", name, $3 }
@@ -78,10 +91,47 @@ TABLE=$(awk '
         gsub(/[",]/, "", line)
         print "ED", name, line
     }
+    # An ER line with no trailing fields is an explicit empty list, which the
+    # presence check below must tell apart from a missing key.
+    /^remits = / {
+        if (type != "engagements") next
+        line = $0
+        sub(/^remits = \[/, "", line); sub(/\]$/, "", line)
+        gsub(/[",]/, "", line)
+        print "ER", name, line
+    }
 ' "$REGISTRY")
 [ -n "$TABLE" ] || { echo "error: could not parse $REGISTRY" >&2; exit 2; }
 
 lookup() { printf '%s\n' "$TABLE" | awk -v t="$1" -v n="$2" '$1==t && $2==n { $1=""; $2=""; sub(/^  /, ""); print; exit }'; }
+
+# --remits: a read-only listing of the engagement register keyed by remit, on
+# stdout, one line per (remit, engagement) pair. It lives here rather than in a
+# tool of its own because this script already parses the register and a second
+# copy of that parser would drift from it; a workspace without `aw` on PATH
+# still has the listing. Engagements whose list is empty appear under the
+# literal remit '-' so the listing is complete. Reads no staged file and writes
+# no diagnostics: the mode is a query, not a gate.
+if [ "$MODE" = "--remits" ]; then
+    printf '%s\n' "$TABLE" | awk '$1 == "ER" { $1 = ""; sub(/^ /, ""); print }' |
+        while read -r name remits; do
+            estatus=$(lookup ES "$name")
+            eactivity=$(lookup EA "$name")
+            [ -n "$eactivity" ] || eactivity="active"
+            if [ "$estatus" = "open" ] && [ -d "$ENGAGEMENTS_DIR/$name" ]; then
+                edir="$ENGAGEMENTS_DIR/$name"
+            elif [ "$estatus" != "open" ] && [ -d "$ARCHIVE_DIR/$name" ]; then
+                edir="$ARCHIVE_DIR/$name"
+            else
+                edir="-"
+            fi
+            [ -n "$remits" ] || remits="-"
+            for r in $remits; do
+                printf '%s\t%s\t%s\t%s\t%s\n' "$r" "$name" "$estatus" "$eactivity" "$edir"
+            done
+        done | LC_ALL=C sort | awk -F'\t' -v f="$REMIT_FILTER" 'f == "" || $1 == f'
+    exit 0
+fi
 
 # Subdirectory names the registry declares as tracked. tmp/ is declared
 # untracked and so never reaches a tracked path — nothing to permit.
@@ -264,6 +314,35 @@ printf '%s\n' "$TABLE" | awk '$1 == "ED" { for (i = 3; i <= NF; i++) print $2, $
     [ -n "$(lookup ES "$dep")" ] ||
         echo "registry: engagement '$name' depends on unregistered '$dep'"
 done | grep . && FAIL=1
+# Remits: which standing areas of responsibility an engagement's work counts
+# against. Required on every entry, open or closed, because the whole value is
+# retrospective collection and that only works when every entry is tagged; an
+# explicit [] is the adopter deciding an engagement sits under none, so an
+# omission is an error rather than a silent "unclassified". The vocabulary is
+# the adopter's, so the shape is checked and the membership is not.
+printf '%s\n' "$TABLE" | awk -v q="'" '
+    $1 == "ES" { es[$2] = 1; order[++n] = $2 }
+    $1 == "ER" {
+        er[$2] = 1
+        for (i = 3; i <= NF; i++) list[$2] = list[$2] " " $i
+    }
+    END {
+        for (i = 1; i <= n; i++) {
+            name = order[i]
+            if (!(name in er)) {
+                print "registry: engagement " q name q " has no remits key (required; [] means none)"
+                continue
+            }
+            cnt = split(list[name], v, " ")
+            for (j = 1; j <= cnt; j++) {
+                if (v[j] !~ /^[a-z0-9]+(-[a-z0-9]+)*$/)
+                    print "registry: engagement " q name q " remit " q v[j] q " is not kebab-case"
+                if (seen[name SUBSEP v[j]]++ == 1)
+                    print "registry: engagement " q name q " lists remit " q v[j] q " twice"
+            }
+        }
+    }
+' | grep . && FAIL=1
 # Non-entity directories: a topic may hold only the tracked subdirectories the
 # registry declares. Undeclared ones grow unnoticed precisely because a markdown
 # glob never sees them.
@@ -481,6 +560,42 @@ for f in $CANDIDATES; do
     [ -z "$(nonentity_subdir "$f")" ] || continue
     git ls-files --error-unmatch -- "$f" > /dev/null 2>&1 || UNTRACKED_MD="$UNTRACKED_MD $f"
 done
+
+# First appearance of a remit value, staged mode only. With no declared
+# vocabulary there is no membership to enforce, so this is the one moment a typo
+# or a synonym is cheap to catch: the author still remembers typing it.
+# Non-blocking by construction — a new remit is legitimate and the register is
+# the workspace's to grow — so it never touches FAIL. Skipped on a repository
+# with no HEAD, where every value is a first appearance and the notice is noise.
+remit_values() {
+    awk '
+        /^\[/ { gsub(/[][ ]/, ""); split($0, s, "."); type = s[1]; next }
+        /^remits = / {
+            if (type != "engagements") next
+            line = $0
+            sub(/^remits = \[/, "", line); sub(/\]$/, "", line)
+            gsub(/[",]/, "", line)
+            m = split(line, v, " ")
+            for (i = 1; i <= m; i++) print v[i]
+        }
+    '
+}
+
+if [ "$MODE" = "" ] && git rev-parse --verify -q HEAD > /dev/null &&
+    git diff --cached --name-only --diff-filter=ACMR -- "$REGISTRY" | grep -q .; then
+    OLD_REMITS=$(git show "HEAD:$REGISTRY" 2> /dev/null | remit_values | LC_ALL=C sort -u)
+    NEW_REMITS=$(git show ":$REGISTRY" | remit_values | LC_ALL=C sort -u)
+    EXISTING=$(printf '%s\n' "$OLD_REMITS" | grep . | paste -sd, - | sed 's/,/, /g')
+    [ -n "$EXISTING" ] || EXISTING="none"
+    # The existing set reaches awk through the environment, not -v: a -v value
+    # is scanned for escape sequences and a literal newline ends it there.
+    printf '%s\n' "$NEW_REMITS" | OLD_REMITS="$OLD_REMITS" awk '
+        BEGIN { n = split(ENVIRON["OLD_REMITS"], o, "\n"); for (i = 1; i <= n; i++) seen[o[i]] = 1 }
+        $0 != "" && !($0 in seen)
+    ' | while read -r r; do
+        echo "notice: remit '$r' appears for the first time in the register (existing: $EXISTING)" >&2
+    done
+fi
 
 if [ -n "$OPEN_EPHEMERA" ]; then
     echo "warning: ephemeral artefacts still open (graduate or expire when their unit lands):" >&2

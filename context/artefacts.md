@@ -64,6 +64,61 @@ Two boundaries:
 If the owning topic has no ledger, open one. `STATE.md` is not a fallback home
 for run detail.
 
+## Remits — what an engagement counts against
+
+> `remits` is a per-engagement, multi-valued classification tag on
+> `[engagements.*]` naming which standing area(s) of responsibility an
+> engagement's work counts against, independent of and orthogonal to its slug,
+> status, activity and dependency graph.
+
+"Standing area of responsibility" is deliberate: remits classify by the kind of
+work, not by anyone's job title, so one engagement can carry two remits honestly
+and the tags survive a role change.
+
+The key is **required on every entry**, open or closed. An empty list is legal
+and means someone looked and decided the engagement sits under no remit; absence
+is an error, not "unclassified". The whole value is retrospective collection,
+which only works when every entry is tagged, and an explicit `[]` turns an
+omission into a decision.
+
+The vocabulary is **the workspace's own** — the model ships none and demands
+none at onboarding. Pick the smallest set of standing areas of responsibility
+you would want to collect past work by, name them for the kind of work rather
+than for a role, and keep them stable. Values are kebab-case, unique within a
+list, and written on one line, the same constraint `depends-on` already carries
+because the registry parser is line-based. The list is a set: the first element
+is not a primary remit. With no declared vocabulary, the lint's first-appearance
+notice is the only drift guard — it prints on stderr the first time a value
+enters the register, and never blocks.
+
+`bin/lint-artefacts --remits [<remit>]` lists the register keyed by remit, one
+tab-separated line per pair. `STATE.md` is deliberately not a surface for
+remits: it is the handover, not an index.
+
+### When a thread leaves its engagement
+
+> **A thread leaves its engagement when it acquires something of its own.** Any
+> one of these is the trigger: it needs a plan or spec; it produces a
+> deliverable a reader outside the workspace will consume; or it gains an
+> external counterpart (a project or issue series, a PR series, a chat thread it
+> owns, a decision gate awaiting a named party). At that point open a new
+> engagement for it in the same commit that files the first such artefact,
+> starting with the parent's `remits`, and leave one line in the parent's ledger
+> naming what moved and where. A thread that only accumulates ledger entries,
+> however many, stays where it is. The trigger is a judgement the session makes;
+> the lint does not detect it.
+
+A spin-off starts with the parent's list and may add to it, never drop from it,
+at creation; later edits are free. There is no provenance key — the parent's
+pointer line and git history carry that, and `depends-on` is the existing
+relation slot, which spin-offs rarely need.
+
+A **container** engagement, one whose role is to be the journal and topic board
+for a remit, is an ordinary open engagement carrying that remit and nothing
+else. The model has no journal flavour, no flag and no relaxed rules: a flag is
+added when a concrete rule needs it, and no current rule breaks on a long-lived
+open engagement.
+
 ## Engagement lifecycle
 
 An engagement's directory location follows its registry status, never the other
