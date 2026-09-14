@@ -14,6 +14,7 @@
 !.seedignore
 !.editorconfig
 !AGENTS.md
+!CHANGELOG.md
 !CLAUDE.md
 !CONTRACT.md
 !README.md
