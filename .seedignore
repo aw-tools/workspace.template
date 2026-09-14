@@ -1,4 +1,5 @@
 # Template-repository-only paths excluded from materialised workspaces.
 .github/
-CONTRACT.md
 .seedignore
+CHANGELOG.md
+CONTRACT.md
