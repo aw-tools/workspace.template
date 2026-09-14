@@ -46,16 +46,16 @@ applied or hand-edited instance, not the mechanism that makes the baseline work.
 
 A version tag, such as `v0.1.0`, is what a human pins with
 `aw init --template <url>@<ref>`, and what `aw`'s built-in default names. One
-tag may carry several entries. An entry id, such as `0001`, is what an instance
+tag may carry several entries. An entry id, such as `1`, is what an instance
 replays from, because an instance can sit part-way through a release and must
 still resume correctly from its own position.
 
 ## Entry format
 
 Each entry is a level-three section beneath `## Entries`, headed
-`NNNN — <imperative summary>`, where `NNNN` is a zero-padded id, monotonic,
-never reused and never renumbered. An entry carries the following fields, in
-this order:
+`N — <imperative summary>`, where `N` is a plain integer id, monotonic, never
+reused and never renumbered. An entry carries the following fields, in this
+order:
 
 - `Date` — when the change landed here.
 - `Template ref` — the commit or pull request that landed it, so a reader can
