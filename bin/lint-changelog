@@ -19,12 +19,19 @@
 #   2. Entry ids under '## Entries' are plain unpadded integers, unique, and
 #      descend down the file, because entries are listed newest first. An empty
 #      entries section passes.
-#   3. No entry field exceeds its word cap. Migration is capped per step rather
-#      than in total, so a complex change buys more steps and not fatter ones,
-#      and a step carries no nested list. The caps and the reasoning behind them
-#      are stated in CHANGELOG.md's 'Entry length' section; the numbers live
-#      here as well because there is nothing for this script to read them from,
-#      so a change to one is a change to both.
+#   3. No entry field exceeds its word cap. The first entry sets the house style
+#      for every entry after it, and prose grows unless something counts it, so
+#      the caps are enforced rather than advised. Migration is capped per step
+#      rather than in total: a complex change then buys more steps and not
+#      fatter ones, pushing bulk into structure a late instance can follow. A
+#      step carries no nested list, because counting a nested bullet would let a
+#      step hide its bulk one level down. A change too complex for an 80-word
+#      Change field is a change that should not be one entry; rationale belongs
+#      in the pull request and in context/artefacts.md, which an instance has.
+#      This script is the only home for the caps. CHANGELOG.md deliberately does
+#      not restate them: that file is read by an instance replaying entries,
+#      which never authors one, and a second copy of a number is a drift
+#      surface. An author meets the cap when the check fires.
 #
 # Check 1 compares the two ends of the range. Checks 2 and 3 read CHANGELOG.md
 # from the working tree, which under continuous integration is the merge result
@@ -61,8 +68,8 @@ USAGE="usage: bin/lint-changelog [<commit-range>]"
 #                         An instance fills them with its own record from its
 #                         first session, so the template's copy is a starting
 #                         point and never a source.
-# Word caps per entry field, mirroring CHANGELOG.md's 'Entry length' table. A
-# word is one whitespace-delimited field and the '- **Label:**' does not count.
+# Word caps per entry field, authoritative here and stated nowhere else. A word
+# is one whitespace-delimited field and the '- **Label:**' does not count.
 CAP_CHANGE=80
 CAP_MIGRATION_STEP=60
 CAP_ALREADY=60
