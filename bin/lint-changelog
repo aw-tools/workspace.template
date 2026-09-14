@@ -19,9 +19,15 @@
 #   2. Entry ids under '## Entries' are plain unpadded integers, unique, and
 #      descend down the file, because entries are listed newest first. An empty
 #      entries section passes.
+#   3. No entry field exceeds its word cap. Migration is capped per step rather
+#      than in total, so a complex change buys more steps and not fatter ones,
+#      and a step carries no nested list. The caps and the reasoning behind them
+#      are stated in CHANGELOG.md's 'Entry length' section; the numbers live
+#      here as well because there is nothing for this script to read them from,
+#      so a change to one is a change to both.
 #
-# Check 1 compares the two ends of the range. Check 2 reads CHANGELOG.md from
-# the working tree, which under continuous integration is the merge result
+# Check 1 compares the two ends of the range. Checks 2 and 3 read CHANGELOG.md
+# from the working tree, which under continuous integration is the merge result
 # being validated.
 #
 # This script is listed in .seedignore, so no instance ever receives it, and it
@@ -55,6 +61,14 @@ USAGE="usage: bin/lint-changelog [<commit-range>]"
 #                         An instance fills them with its own record from its
 #                         first session, so the template's copy is a starting
 #                         point and never a source.
+# Word caps per entry field, mirroring CHANGELOG.md's 'Entry length' table. A
+# word is one whitespace-delimited field and the '- **Label:**' does not count.
+CAP_CHANGE=80
+CAP_MIGRATION_STEP=60
+CAP_ALREADY=60
+CAP_VERIFY=60
+CAP_DIVERGED=80
+
 SEED_ONLY="workspace.toml
 README.md
 tmp/.keep
@@ -231,5 +245,81 @@ for id in $DUPLICATES; do
     echo "$CHANGELOG: entry id $id appears more than once — an id is never reused and never renumbered" >&2
     FAIL=1
 done
+
+# Check 3 — no field outruns its cap. The scan runs inside '## Entries' only,
+# tracks the current '### N' heading for the message, and attributes every line
+# to the field label that last opened. Migration accumulates per numbered step
+# instead, and a bullet nested under one is refused outright rather than folded
+# into the step's count: counting it would let a step hide its bulk one level
+# down, which is the evasion the per-step cap exists to close.
+awk -v changelog="$CHANGELOG" \
+    -v cap_change="$CAP_CHANGE" -v cap_step="$CAP_MIGRATION_STEP" \
+    -v cap_already="$CAP_ALREADY" -v cap_verify="$CAP_VERIFY" \
+    -v cap_diverged="$CAP_DIVERGED" '
+    function cap_for(f) {
+        if (f == "Change") return cap_change
+        if (f == "Already applied when") return cap_already
+        if (f == "Verify") return cap_verify
+        if (f == "If your copy has diverged") return cap_diverged
+        return 0
+    }
+    function flush(  cap) {
+        if (field == "" || field == "Migration") { field = ""; return }
+        cap = cap_for(field)
+        if (cap > 0 && words > cap)
+            printf "%s: entry %s field %c%s%c runs %d words over the %d-word cap\n",
+                changelog, entry, 39, field, 39, words - cap, cap
+        field = ""
+    }
+    function flush_step() {
+        if (step == "") return
+        if (words > cap_step)
+            printf "%s: entry %s migration step %s runs %d words over the %d-word cap\n",
+                changelog, entry, step, words - cap_step, cap_step
+        step = ""
+    }
+    /^(```|~~~)/ { fence = !fence; next }
+    fence { next }
+    /^## / {
+        flush(); flush_step()
+        inentries = ($0 ~ /^##[[:space:]]+Entries[[:space:]]*$/)
+        next
+    }
+    !inentries { next }
+    /^###[[:space:]]/ {
+        flush(); flush_step()
+        entry = $2
+        next
+    }
+    # A new top-level field closes whatever was open before it.
+    /^-[[:space:]]+\*\*/ {
+        flush(); flush_step()
+        line = $0
+        sub(/^-[[:space:]]+\*\*/, "", line)
+        if (line !~ /:\*\*/) next
+        field = line
+        sub(/:\*\*.*$/, "", field)
+        sub(/^[^*]*:\*\*[[:space:]]*/, "", line)
+        words = split(line, w, " ")
+        next
+    }
+    # Inside Migration, a numbered item is a step and a nested bullet is refused.
+    field == "Migration" && /^[[:space:]]+[0-9]+\./ {
+        flush_step()
+        line = $0
+        sub(/^[[:space:]]+[0-9]+\./, "", line)
+        step = $1
+        sub(/\.$/, "", step)
+        words = split(line, w, " ")
+        next
+    }
+    field == "Migration" && step != "" && /^[[:space:]]+[-*+][[:space:]]/ {
+        printf "%s: entry %s migration step %s carries a nested list — a step is one numbered item, counted whole\n",
+            changelog, entry, step
+        next
+    }
+    field != "" { words += NF }
+    END { flush(); flush_step() }
+' "$CHANGELOG" | grep . >&2 && FAIL=1
 
 exit $FAIL

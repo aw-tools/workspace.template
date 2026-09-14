@@ -80,6 +80,30 @@ order:
 An entry says how to apply a change, never how to undo one; reversal is out of
 scope.
 
+## Entry length
+
+Every field is capped, and `bin/lint-changelog` enforces the caps. A word is one
+whitespace-delimited field; the `- **Label:**` itself does not count.
+
+| Field                       | Cap                 |
+| --------------------------- | ------------------- |
+| `Change`                    | 80 words            |
+| `Migration`                 | 60 words _per step_ |
+| `Already applied when`      | 60 words            |
+| `Verify`                    | 60 words            |
+| `If your copy has diverged` | 80 words            |
+
+`Migration` is capped per step and not in total, so a complex change buys more
+steps rather than fatter ones: the pressure is toward structure, which an
+instance replaying late can follow, and away from prose it has to interpret. A
+step is one numbered item, counted whole, and carries no nested list.
+
+The caps exist because the first entry sets the house style for every entry
+after it, and prose grows unless something counts it. A change too complex for
+an 80-word `Change` is a change that should not be one entry. Rationale belongs
+in the pull request and in `context/artefacts.md`, which an instance has; an
+entry answers how to apply the change, and nothing else.
+
 ## Entries
 
 ### 1 — Require `remits` on every engagement register entry
@@ -91,30 +115,21 @@ scope.
 - **Kind:** `replace` for `bin/lint-artefacts`; `adapt` for
   `context/artefacts.toml`, `context/artefacts.md` and `AGENTS.md`
 - **Change:** Engagements now declare `remits`, a multi-valued tag naming the
-  standing areas of responsibility their work counts against. Spin-off
-  engagements pile up and nothing records that they belong to the same area, so
-  collecting past work on one is a memory exercise. The tag is orthogonal to
-  slug, status, activity and `depends-on`, so it needs none of them to change,
-  and the vocabulary is each workspace's own — the model ships none and demands
-  none at onboarding. The key is required on every entry, open or closed,
-  because retrospective collection only works when every entry is tagged; an
-  explicit `[]` is a workspace deciding an engagement sits under no remit, which
-  turns an omission into a decision rather than leaving it silently
-  unclassified. A new `--remits` listing mode answers the question the tag
-  exists for.
+  standing areas of responsibility their work counts against. Spin-offs
+  accumulate and nothing records that they belong to the same area, so
+  collecting past work on one is a memory exercise. The key is required on every
+  entry, open or closed: an explicit `[]` turns an omission into a decision.
+  `bin/lint-artefacts --remits` lists the register keyed by remit.
 - **Migration:**
   1. Copy this template's `bin/lint-artefacts` over yours and strip the
      `(decision NNN)` citations, substituting your own register's numbers or
      omitting them. If your copy has diverged, see the note below instead.
   2. Add the `remits = []` line to the engagement-register comment block in your
      `context/artefacts.toml`, matching this template's.
-  3. Choose your vocabulary before touching a single entry. Pick the smallest
-     set of standing areas of responsibility you would want to collect past work
-     by; name each for the kind of work rather than for a role, so one
-     engagement can carry two honestly and the names survive a role change. Two
-     to four names is the expected size. Write them down somewhere durable —
-     your decisions register is the natural home — because nothing in the model
-     records the vocabulary and the lint cannot check membership against it.
+  3. Choose your vocabulary before touching a single entry, and record it in
+     your decisions register: nothing in the model stores it and the lint cannot
+     check membership against it. This template's `context/artefacts.md` carries
+     the guidance on picking names; two to four is the expected size.
   4. Backfill every entry in your register, open and closed alike, in one
      commit. Read each engagement's ledger or plan before tagging it rather than
      inferring from the slug; an engagement genuinely under no standing area
