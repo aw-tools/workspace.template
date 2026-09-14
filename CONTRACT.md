@@ -101,13 +101,12 @@ template repository rather than from its own tree.
 1. **Clone the template** at the `url` your `workspace.toml`'s `[template]`
    block records, into untracked scratch — `tmp/` in your workspace is the
    intended home — or fetch into that clone if one survives from a previous
-   replay. Clone with full history, not a shallow clone, because the starting
-   point is read out of a past commit. Delete the clone once the replay
-   finishes. You need it before anything else, because the starting point is
-   read out of the template's own history. If the whole `[template]` block is
-   absent, the workspace was built by hand rather than by `aw init` and there is
-   no provenance to fetch from: say so, and settle the starting point with the
-   human before replaying anything.
+   replay. You need it before anything else, because the starting point is read
+   out of the template's own history: clone with full history, not a shallow
+   clone. If the whole `[template]` block is absent, the workspace was built by
+   hand rather than by `aw init` and there is no provenance to fetch from: say
+   so, and settle the starting point with the human before replaying anything.
+   Delete the clone once the replay finishes.
 2. **Find your starting point.** Read `applied` from the `[template]` block. If
    the key is present, its value is your starting point. If it is absent, derive
    the baseline: the newest entry id present in the template's `CHANGELOG.md` at
