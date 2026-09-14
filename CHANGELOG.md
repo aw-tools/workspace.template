@@ -3,7 +3,7 @@
 This file lists one entry per governed change to this template. An instance
 replays the entries it has not applied yet, in order, to bring its own copy of
 the governed layer up to date. It is not a release-notes file, and it does not
-follow the Keep a Changelog convention: that format answers "should I upgrade?"
+follow the Keep a Changelog convention: that format answers "should I upgrade?",
 this one answers "how do I apply this?"
 
 For the replay procedure, see the `Replaying governed changes` section of
@@ -29,9 +29,18 @@ order, with no skipping.
 
 ## Baseline
 
-No history is retro-filled. An instance materialised from `v0.1.0` or later
-begins with nothing applied. An instance whose manifest carries no applied
-marker is treated as being at the baseline.
+No history is retro-filled. An instance's baseline is derived from its recorded
+provenance, not assumed to be zero: `aw init` writes a `[template]` block into
+the materialised instance's `workspace.toml`, recording the template `url`, the
+`ref` as typed, and the resolved commit `sha`.
+
+An instance whose manifest carries no `applied` marker takes as its baseline the
+newest entry id present in the template at its recorded `sha` — everything at or
+below that id is already in the files it was created with. An instance replays
+only entries above that baseline.
+
+The `Already applied when` skip test remains the safety net for a partially
+applied or hand-edited instance, not the mechanism that makes the baseline work.
 
 ## Versions and entry ids
 
@@ -43,9 +52,10 @@ still resume correctly from its own position.
 
 ## Entry format
 
-Each entry is a level-two section headed `NNNN — <imperative summary>`, where
-`NNNN` is a zero-padded id, monotonic, never reused and never renumbered. An
-entry carries the following fields, in this order:
+Each entry is a level-three section beneath `## Entries`, headed
+`NNNN — <imperative summary>`, where `NNNN` is a zero-padded id, monotonic,
+never reused and never renumbered. An entry carries the following fields, in
+this order:
 
 - `Date` — when the change landed here.
 - `Template ref` — the commit or pull request that landed it, so a reader can
@@ -62,8 +72,9 @@ entry carries the following fields, in this order:
   anything.
 - `Already applied when` — the skip test: an observable condition or a command,
   so replay is idempotent and a half-applied instance can tell where it stopped.
-- `Verify` — the command whose passing proves the entry landed, usually
-  `bin/lint-artefacts`.
+- `Verify` — a check that fails before the entry is applied and passes after.
+  Name `bin/lint-artefacts` only where the lint actually enforces this change;
+  otherwise state what to look for.
 - `If your copy has diverged` — present only for files instances commonly edit;
   states what to preserve and what must change regardless.
 
@@ -73,4 +84,5 @@ scope.
 ## Entries
 
 No entries exist yet. The first entry accompanies the next governed change to
-this template.
+this template. The first entry replaces this paragraph; each later entry is
+added above the previous newest.
