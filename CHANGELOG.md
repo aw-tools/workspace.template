@@ -80,60 +80,6 @@ order:
 An entry says how to apply a change, never how to undo one; reversal is out of
 scope.
 
-## Entries`, headed
-
-`N — <imperative summary>`, where `N` is a plain integer id, monotonic, never
-reused and never renumbered. An entry carries the following fields, in this
-order:
-
-- `Date` — when the change landed here.
-- `Template ref` — the commit or pull request that landed it, so a reader can
-  see the diff. Never a substitute for following the steps.
-- `Paths` — the governed paths touched.
-- `Kind` — `replace` (copy this template's version of the file, then strip the
-  decision citations, which address this template's own register and mean
-  nothing in an instance's) or `adapt` (the instance authors an equivalent
-  change itself; the entry says what must be true afterwards).
-- `Change` — one short paragraph, in plain words, saying what changed and why.
-- `Migration` — ordered imperative steps, including any backfill of content the
-  instance already holds. This is the field the whole file exists for: an
-  instance several releases late must be able to apply the entry without diffing
-  anything.
-- `Already applied when` — the skip test: an observable condition or a command,
-  so replay is idempotent and a half-applied instance can tell where it stopped.
-- `Verify` — a check that fails before the entry is applied and passes after.
-  Name `bin/lint-artefacts` only where the lint actually enforces this change;
-  otherwise state what to look for.
-- `If your copy has diverged` — present only for files instances commonly edit;
-  states what to preserve and what must change regardless.
-
-An entry says how to apply a change, never how to undo one; reversal is out of
-scope.
-
-## Entry length
-
-Every field is capped, and `bin/lint-changelog` enforces the caps. A word is one
-whitespace-delimited field; the `- **Label:**` itself does not count.
-
-| Field                       | Cap                 |
-| --------------------------- | ------------------- |
-| `Change`                    | 80 words            |
-| `Migration`                 | 60 words _per step_ |
-| `Already applied when`      | 60 words            |
-| `Verify`                    | 60 words            |
-| `If your copy has diverged` | 80 words            |
-
-`Migration` is capped per step and not in total, so a complex change buys more
-steps rather than fatter ones: the pressure is toward structure, which an
-instance replaying late can follow, and away from prose it has to interpret. A
-step is one numbered item, counted whole, and carries no nested list.
-
-The caps exist because the first entry sets the house style for every entry
-after it, and prose grows unless something counts it. A change too complex for
-an 80-word `Change` is a change that should not be one entry. Rationale belongs
-in the pull request and in `context/artefacts.md`, which an instance has; an
-entry answers how to apply the change, and nothing else.
-
 ## Entries
 
 ### 1 — Require `remits` on every engagement register entry
