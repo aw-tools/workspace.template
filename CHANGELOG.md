@@ -3,7 +3,7 @@
 This file lists one entry per governed change to this template. An instance
 replays the entries it has not applied yet, in order, to bring its own copy of
 the governed layer up to date. It is not a release-notes file, and it does not
-follow the Keep a Changelog convention: that format answers "should I upgrade?",
+follow the Keep a Changelog convention: that format answers "should I upgrade?";
 this one answers "how do I apply this?"
 
 For the replay procedure, see the `Replaying governed changes` section of
