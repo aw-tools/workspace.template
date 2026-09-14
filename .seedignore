@@ -3,3 +3,4 @@
 .seedignore
 CHANGELOG.md
 CONTRACT.md
+bin/lint-changelog
