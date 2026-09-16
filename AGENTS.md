@@ -134,8 +134,8 @@ templates, `bin/lint-artefacts` enforces both at commit time.
   responsibility its work counts against, as a list in the registry; `[]` is a
   deliberate "none", absence is an error. A thread leaves its engagement when it
   acquires a plan, spec, deliverable or external counterpart of its own, and the
-  spin-off starts with the parent's remits. `bin/lint-artefacts --remits` lists
-  engagements by remit.
+  spin-off derives its own remits rather than inheriting the parent's.
+  `bin/lint-artefacts --remits` lists engagements by remit.
 
 ## Formatting
 

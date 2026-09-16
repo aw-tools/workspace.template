@@ -82,6 +82,40 @@ scope.
 
 ## Entries
 
+### 2 — A spin-off derives its own remits instead of inheriting the parent's
+
+- **Date:** 2026-09-16
+- **Template ref:** `fix/remit-inheritance`
+- **Paths:** `context/artefacts.md`, `AGENTS.md`
+- **Kind:** `adapt` for both
+- **Change:** Entry 1 said a spin-off starts with the parent's remits and may
+  add, never drop. A spin-off often exists because the parent's scope was wrong,
+  and an undeserved tag corrupts the retrospective collection remits exist for.
+  The floor is removed. Prose only.
+- **Migration:**
+  1. In `context/artefacts.md`, in the `When a thread leaves its engagement`
+     blockquote, replace `starting with the parent's remits` with
+     `deriving its own remits`.
+  2. Replace the sentence after that blockquote, the one forbidding a spin-off
+     from dropping the parent's remits, with the rule that a spin-off derives
+     its own from its own scope, the parent's list being a starting point and
+     not a constraint. Take this template's wording. Leave the provenance
+     sentence ending the paragraph unchanged.
+  3. In your workspace instructions, change the remits bullet's closing clause
+     from the spin-off starting with the parent's remits to it deriving its own
+     remits rather than inheriting the parent's.
+  4. No backfill. Existing entries keep their remits; nothing is recomputed.
+- **Already applied when:** `grep -q 'never drop from it' context/artefacts.md`
+  finds nothing.
+- **Verify:** `context/artefacts.md` and your workspace instructions both say a
+  spin-off derives its own remits, and neither carries the never-drop
+  constraint. `bin/lint-artefacts --all` exits 0, unchanged before and after —
+  this entry touches no enforced rule.
+- **If your copy has diverged:** instances commonly reword the remits section.
+  Whatever your wording, the outcome that must hold is that dropping an
+  inherited remit at spin-off time is ordinary and needs no justification
+  against the parent.
+
 ### 1 — Require `remits` on every engagement register entry
 
 - **Date:** 2026-09-14

@@ -103,15 +103,19 @@ remits: it is the handover, not an index.
 > external counterpart (a project or issue series, a PR series, a chat thread it
 > owns, a decision gate awaiting a named party). At that point open a new
 > engagement for it in the same commit that files the first such artefact,
-> starting with the parent's `remits`, and leave one line in the parent's ledger
-> naming what moved and where. A thread that only accumulates ledger entries,
-> however many, stays where it is. The trigger is a judgement the session makes;
-> the lint does not detect it.
+> deriving its own `remits`, and leave one line in the parent's ledger naming
+> what moved and where. A thread that only accumulates ledger entries, however
+> many, stays where it is. The trigger is a judgement the session makes; the
+> lint does not detect it.
 
-A spin-off starts with the parent's list and may add to it, never drop from it,
-at creation; later edits are free. There is no provenance key — the parent's
-pointer line and git history carry that, and `depends-on` is the existing
-relation slot, which spin-offs rarely need.
+A spin-off derives its own `remits` from its own scope. The parent's list is the
+starting point, not a constraint: adding and dropping are both ordinary, and a
+spin-off often exists precisely because the parent's scope was wrong or has
+since changed. A tag the engagement has not earned corrupts the retrospective
+collection remits exist for, so an inherited value that does not fit is dropped.
+There is no provenance key — the parent's pointer line and git history carry
+that, and `depends-on` is the existing relation slot, which spin-offs rarely
+need.
 
 A **container** engagement, one whose role is to be the journal and topic board
 for a remit, is an ordinary open engagement carrying that remit and nothing
