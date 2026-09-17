@@ -82,6 +82,37 @@ scope.
 
 ## Entries
 
+### 3 — Carry paths one per line in `bin/lint-artefacts`
+
+- **Date:** 2026-09-17
+- **Template ref:** `fix/lint-path-splitting`
+- **Paths:** `bin/lint-artefacts`
+- **Kind:** `replace`
+- **Change:** Every loop that iterated a list of paths did so with an unquoted
+  `for`, so a tracked attachment saved under a title with spaces was split into
+  words, and git printed a title with a non-ASCII character C-quoted, which no
+  check recognised. The untracked-artefact warning listed fragments on every
+  commit, and the ledger-start check counted one as a file beyond plan and spec,
+  blocking the commit. Paths now travel one per line, unquoted.
+- **Migration:**
+  1. Copy this template's `bin/lint-artefacts` over yours and strip the
+     `(decision NNN)` citations, substituting your own register's numbers or
+     omitting them. If your copy has diverged, see the note below instead.
+- **Already applied when:** `grep -q '^git_paths()' bin/lint-artefacts` finds a
+  line.
+- **Verify:** with a tracked `context/engagements/<x>/attachments/a b.md` and a
+  tracked `ü.md` beside it, and no ledger in that engagement,
+  `bin/lint-artefacts --all` prints no untracked warning and no ledger-start
+  error; before the change it lists `b.md` and reports the engagement as
+  started. An untracked `c d.md` beside the plan is reported once, as one path.
+- **If your copy has diverged:** instances commonly edit `bin/lint-artefacts`.
+  Preserve your own checks and take two things from this template regardless.
+  Every `git ls-files` and `git diff --name-only` that lists paths runs with
+  `core.quotePath` off, through the `git_paths` wrapper. No loop word-splits a
+  path list: the per-file loop, the two topic loops, the ledger-start predicate,
+  the closure-hygiene loop, the untracked candidates and the two trailing
+  reports read one path per line, and the two accumulators join with newlines.
+
 ### 2 — A spin-off derives its own remits instead of inheriting the parent's
 
 - **Date:** 2026-09-16
