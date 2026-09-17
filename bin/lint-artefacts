@@ -58,9 +58,16 @@ usage() { echo "usage: bin/lint-artefacts [--all | --remits [<remit>]]" >&2; exi
 
 MODE="${1:-}"
 REMIT_FILTER="${2:-}"
+
+# Every path listing comes out of git raw. With core.quotePath at its default,
+# a path holding any non-ASCII byte is printed C-quoted inside double quotes,
+# and no matcher below knows that form: a tracked "Optionen – Notizen.md" reads
+# as a topic-level file with a stray quote in its name.
+git_paths() { git -c core.quotePath=false "$@"; }
+
 case "$MODE" in
-"") [ $# -le 0 ] || usage; FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.md') ;;
---all) [ $# -le 1 ] || usage; FILES=$(git ls-files -- '*.md') ;;
+"") [ $# -le 0 ] || usage; FILES=$(git_paths diff --cached --name-only --diff-filter=ACMR -- '*.md') ;;
+--all) [ $# -le 1 ] || usage; FILES=$(git_paths ls-files -- '*.md') ;;
 --remits) [ $# -le 2 ] || usage; FILES="" ;;
 *) usage ;;
 esac
@@ -159,7 +166,13 @@ fm_get() {
 FAIL=0
 OPEN_EPHEMERA=""
 
-for f in $FILES; do
+# Paths travel one per line, never word-split: an attachment saved under its
+# downloaded title carries spaces, and `for f in $LIST` would hand each word to
+# the body as a file of its own. The heredoc keeps the loop in this shell, so
+# FAIL and OPEN_EPHEMERA survive it; a piped `while` would set them in a
+# subshell. An empty list reads as one empty line, hence the guard.
+while IFS= read -r f; do
+    [ -n "$f" ] || continue
     # Agent surfaces are out of scope by directory. A skill, a subagent
     # definition or a command is markdown carrying frontmatter of a foreign
     # schema — it declares `name`, never `kind` — so the model has nothing to say
@@ -260,12 +273,16 @@ for f in $FILES; do
     esac
 
     if [ "$class" = "ephemeral" ] && [ "$status" = "open" ]; then
-        OPEN_EPHEMERA="$OPEN_EPHEMERA $f"
+        OPEN_EPHEMERA="${OPEN_EPHEMERA:+$OPEN_EPHEMERA
+}$f"
     fi
-done
+done <<EOF
+$FILES
+EOF
 
 # Registry-level checks, independent of which files are staged.
-for topic in $(git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 3 { print $3 }' | sort -u); do
+while IFS= read -r topic; do
+    [ -n "$topic" ] || continue
     estatus=$(lookup ES "$topic")
     if [ -z "$estatus" ]; then
         echo "$ENGAGEMENTS_DIR/$topic/: engagement not in registry"
@@ -274,8 +291,11 @@ for topic in $(git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 3 { print $3 }' |
         echo "$ENGAGEMENTS_DIR/$topic/: engagement is closed, belongs under $ARCHIVE_DIR/$topic/"
         FAIL=1
     fi
-done
-for topic in $(git ls-files "$ARCHIVE_DIR" | awk -F/ 'NF > 3 { print $3 }' | sort -u); do
+done <<EOF
+$(git_paths ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 3 { print $3 }' | sort -u)
+EOF
+while IFS= read -r topic; do
+    [ -n "$topic" ] || continue
     estatus=$(lookup ES "$topic")
     if [ -z "$estatus" ]; then
         echo "$ARCHIVE_DIR/$topic/: engagement not in registry"
@@ -284,9 +304,11 @@ for topic in $(git ls-files "$ARCHIVE_DIR" | awk -F/ 'NF > 3 { print $3 }' | sor
         echo "$ARCHIVE_DIR/$topic/: engagement is not closed, belongs under $ENGAGEMENTS_DIR/$topic/"
         FAIL=1
     fi
-done
+done <<EOF
+$(git_paths ls-files "$ARCHIVE_DIR" | awk -F/ 'NF > 3 { print $3 }' | sort -u)
+EOF
 printf '%s\n' "$TABLE" | awk '$1 == "ES" { print $2, $3 }' | while read -r name estatus; do
-    if [ "$estatus" = "open" ] && [ -z "$(git ls-files "$ENGAGEMENTS_DIR/$name")" ]; then
+    if [ "$estatus" = "open" ] && [ -z "$(git_paths ls-files "$ENGAGEMENTS_DIR/$name")" ]; then
         echo "registry: open engagement '$name' has no directory under $ENGAGEMENTS_DIR/"
     fi
 done | grep . && FAIL=1
@@ -298,14 +320,17 @@ done | grep . && FAIL=1
 printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 == "open" { print $2 }' | while read -r name; do
     has_other=0
     has_ledger=0
-    for f in $(git ls-files "$ENGAGEMENTS_DIR/$name"); do
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
         [ -z "$(nonentity_subdir "$f")" ] || continue
         case "$(basename "$f")" in
         plan-*.md | spec-*.md) ;;
         ledger-*.md) has_ledger=1 ;;
         *) has_other=1 ;;
         esac
-    done
+    done <<EOF
+$(git_paths ls-files "$ENGAGEMENTS_DIR/$name")
+EOF
     if [ "$has_other" = 1 ] && [ "$has_ledger" = 0 ]; then
         echo "$ENGAGEMENTS_DIR/$name/: engagement has started (holds a file beyond plan/spec) but has no ledger-*.md"
     fi
@@ -346,7 +371,7 @@ printf '%s\n' "$TABLE" | awk -v q="'" '
 # Non-entity directories: a topic may hold only the tracked subdirectories the
 # registry declares. Undeclared ones grow unnoticed precisely because a markdown
 # glob never sees them.
-{ git ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 4 { print "'"$ENGAGEMENTS_DIR"'", $3, $4 }'; git ls-files "$ARCHIVE_DIR" | awk -F/ 'NF > 4 { print "'"$ARCHIVE_DIR"'", $3, $4 }'; } |
+{ git_paths ls-files "$ENGAGEMENTS_DIR" | awk -F/ 'NF > 4 { print "'"$ENGAGEMENTS_DIR"'", $3, $4 }'; git_paths ls-files "$ARCHIVE_DIR" | awk -F/ 'NF > 4 { print "'"$ARCHIVE_DIR"'", $3, $4 }'; } |
     sort -u | while read -r dir topic sub; do
         case " $TRACKED_SUBDIRS " in
         *" $sub "*) ;;
@@ -356,7 +381,7 @@ printf '%s\n' "$TABLE" | awk -v q="'" '
 # Closure hygiene: a non-open engagement must hold no open episodic artefact —
 # closing an engagement closes its plans, specs, and ledger.
 printf '%s\n' "$TABLE" | awk '$1 == "ES" && $3 != "open" { print $2 }' | while read -r name; do
-    for f in $(git ls-files "$ENGAGEMENTS_DIR/$name" "$ARCHIVE_DIR/$name"); do
+    git_paths ls-files "$ENGAGEMENTS_DIR/$name" "$ARCHIVE_DIR/$name" | while IFS= read -r f; do
         case "$f" in *.md) ;; *) continue ;; esac
         [ -z "$(nonentity_subdir "$f")" ] || continue
         [ "$(lookup KC "$(fm_get "$f" kind)")" = "episodic" ] || continue
@@ -556,10 +581,15 @@ CANDIDATES=$(
     { find . -maxdepth 1 -name '*.md'; find context -name '*.md' -not -path '*/tmp/*'; } 2> /dev/null |
         sed 's|^\./||' | sort -u
 )
-for f in $CANDIDATES; do
+while IFS= read -r f; do
+    [ -n "$f" ] || continue
     [ -z "$(nonentity_subdir "$f")" ] || continue
-    git ls-files --error-unmatch -- "$f" > /dev/null 2>&1 || UNTRACKED_MD="$UNTRACKED_MD $f"
-done
+    git ls-files --error-unmatch -- "$f" > /dev/null 2>&1 ||
+        UNTRACKED_MD="${UNTRACKED_MD:+$UNTRACKED_MD
+}$f"
+done <<EOF
+$CANDIDATES
+EOF
 
 # First appearance of a remit value, staged mode only. With no declared
 # vocabulary there is no membership to enforce, so this is the one moment a typo
@@ -599,12 +629,12 @@ fi
 
 if [ -n "$OPEN_EPHEMERA" ]; then
     echo "warning: ephemeral artefacts still open (graduate or expire when their unit lands):" >&2
-    for f in $OPEN_EPHEMERA; do echo "  $f" >&2; done
+    printf '%s\n' "$OPEN_EPHEMERA" | sed 's/^/  /' >&2
 fi
 
 if [ -n "$UNTRACKED_MD" ]; then
     echo "warning: untracked artefacts (invisible to every check above until 'git add'):" >&2
-    for f in $UNTRACKED_MD; do echo "  $f" >&2; done
+    printf '%s\n' "$UNTRACKED_MD" | sed 's/^/  /' >&2
 fi
 
 exit $FAIL
