@@ -550,16 +550,22 @@ fi
 # invisible to every one of them. tmp/ is untracked by design and excluded here
 # to keep the noise floor low; a declared subdirectory's contents are not
 # artefacts (nonentity_subdir), so its own untracked .md files are skipped the
-# same way the per-file loop skips them.
+# same way the per-file loop skips them. Paths are carried one per line, never
+# word-split: an attachment saved under its downloaded title has spaces in it,
+# and splitting on them reports each word as a missing file.
 UNTRACKED_MD=""
 CANDIDATES=$(
     { find . -maxdepth 1 -name '*.md'; find context -name '*.md' -not -path '*/tmp/*'; } 2> /dev/null |
         sed 's|^\./||' | sort -u
 )
-for f in $CANDIDATES; do
+while IFS= read -r f; do
+    [ -n "$f" ] || continue
     [ -z "$(nonentity_subdir "$f")" ] || continue
-    git ls-files --error-unmatch -- "$f" > /dev/null 2>&1 || UNTRACKED_MD="$UNTRACKED_MD $f"
-done
+    git ls-files --error-unmatch -- "$f" > /dev/null 2>&1 || UNTRACKED_MD="$UNTRACKED_MD
+$f"
+done << EOF
+$CANDIDATES
+EOF
 
 # First appearance of a remit value, staged mode only. With no declared
 # vocabulary there is no membership to enforce, so this is the one moment a typo
@@ -604,7 +610,7 @@ fi
 
 if [ -n "$UNTRACKED_MD" ]; then
     echo "warning: untracked artefacts (invisible to every check above until 'git add'):" >&2
-    for f in $UNTRACKED_MD; do echo "  $f" >&2; done
+    printf '%s\n' "$UNTRACKED_MD" | sed '/^$/d; s/^/  /' >&2
 fi
 
 exit $FAIL

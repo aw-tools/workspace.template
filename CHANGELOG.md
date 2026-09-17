@@ -82,6 +82,25 @@ scope.
 
 ## Entries
 
+### 3 — The untracked-artefact warning carries paths whole, not word-split
+
+- **Date:** 2026-09-17
+- **Template ref:** `fix/lint-untracked-paths-with-spaces`
+- **Paths:** `bin/lint-artefacts`
+- **Kind:** `replace`
+- **Change:** The untracked-artefact check iterated its candidate list with an
+  unquoted `for`, so a path containing spaces was split into words and each word
+  was reported as a missing file. An attachment saved under its downloaded
+  title, a meeting transcript for instance, made the warning cry wolf on every
+  commit. Candidates and results are now carried one per line.
+- **Migration:**
+  1. Replace `bin/lint-artefacts` with this template's version.
+- **Already applied when:** `grep -q 'while IFS= read -r f' bin/lint-artefacts`
+  succeeds.
+- **Verify:** With a tracked `context/engagements/<x>/attachments/a b.md`
+  present, `bin/lint-artefacts --all` prints no untracked-artefact warning.
+  Before the change it lists `a` and `b.md` as untracked.
+
 ### 2 — A spin-off derives its own remits instead of inheriting the parent's
 
 - **Date:** 2026-09-16
