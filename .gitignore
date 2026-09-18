@@ -22,6 +22,12 @@
 !garden.yaml
 !workspace.toml
 
+# Template-repository-only files: listed in .seedignore, so they never reach
+# a workspace created from this template.
+!CONTRIBUTING.md
+!LICENSE-APACHE
+!LICENSE-MIT
+
 # Workspace layer — directories
 !.github/
 !.github/**

@@ -23,12 +23,27 @@ workspace remote.
 
 ## Day to day
 
-| Command               | Effect                                                     |
-| --------------------- | ---------------------------------------------------------- |
-| `aw doctor`           | Environment and remote-reachability checks with remedies   |
-| `aw status` (planned) | Per-repo state, config drift, skill-link health            |
-| `aw sync` (planned)   | Fetch and report only — never merges, pulls, or checks out |
+| Command     | Effect                                                     |
+| ----------- | ---------------------------------------------------------- |
+| `aw doctor` | Environment and remote-reachability checks with remedies   |
+| `aw status` | Per-repo state, config drift, skill-link health            |
+| `aw sync`   | Fetch and report only — never merges, pulls, or checks out |
 
 ## See also
 
-`aw` lives in the `agentic-workspace` repo.
+`aw` lives in the [aw-cli](https://github.com/aw-tools/aw-cli) repository. The
+contract every workspace conforms to, and the guide for people, live in
+[agentic-workspace](https://github.com/aw-tools/agentic-workspace).
+
+## Contributing
+
+Not accepting external contributions yet. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Licence
+
+Copyright 2026 Front Seed Labs Ltd.
+
+Licensed under either [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at
+your option. A workspace you create from this template is yours; the licence
+covers the template itself.

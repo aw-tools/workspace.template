@@ -82,6 +82,20 @@ scope.
 
 ## Entries
 
+### 4 — Track template-only files
+
+- **Date:** 2026-09-18
+- **Template ref:** `chore/public-home`
+- **Paths:** `.gitignore`, `bin/lint-artefacts`
+- **Kind:** `adapt`
+- **Change:** The template repository tracks its own licence and contributing
+  files. `.seedignore` keeps them out of every workspace, so nothing here
+  reaches you.
+- **Migration:**
+  1. Nothing.
+- **Already applied when:** always.
+- **Verify:** none.
+
 ### 3 — Carry paths one per line in `bin/lint-artefacts`
 
 - **Date:** 2026-09-17
