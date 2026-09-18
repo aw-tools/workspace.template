@@ -82,6 +82,23 @@ scope.
 
 ## Entries
 
+### 4 — Whitelist the template-only licence and contributing files
+
+- **Date:** 2026-09-18
+- **Template ref:** `chore/public-home`
+- **Paths:** `.gitignore`
+- **Kind:** `adapt`
+- **Change:** The template repository gains `LICENSE-MIT`, `LICENSE-APACHE` and
+  `CONTRIBUTING.md` ahead of its public release. The inverted `.gitignore` had
+  to whitelist them so git tracks them here. All three are listed in
+  `.seedignore`, so a workspace created from this template never receives them
+  and needs nothing in its own `.gitignore`.
+- **Migration:**
+  1. Nothing to do. Leave your `.gitignore` as it is.
+- **Already applied when:** always; the entry exists so the replay sequence
+  stays unbroken.
+- **Verify:** `git ls-files LICENSE-MIT` prints nothing in your workspace.
+
 ### 3 — Carry paths one per line in `bin/lint-artefacts`
 
 - **Date:** 2026-09-17
