@@ -182,7 +182,7 @@ while IFS= read -r f; do
     # from a member repo are invisible here anyway (git tracks the link, not the
     # target), so this is what admits workspace-local ones kept in this history.
     case "$f" in .agents/* | .claude/* | .skills/*) continue ;; esac
-    case "$(basename "$f")" in README.md | AGENTS.md | CLAUDE.md | CONTRACT.md | CHANGELOG.md) continue ;; esac
+    case "$(basename "$f")" in README.md | AGENTS.md | CLAUDE.md | CONTRACT.md | CHANGELOG.md | CONTRIBUTING.md) continue ;; esac
     [ -f "$f" ] || continue
 
     # Anything below a topic directory is not an artefact: no kind, no status, no
