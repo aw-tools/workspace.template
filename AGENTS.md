@@ -42,6 +42,15 @@ holds the full procedure.
 | `tmp/`           | Scratch; untracked                                     |
 | `<repo>/`        | Inner repositories; each its own git repo, untracked   |
 
+## Staying current with the template
+
+This workspace was materialised from the template named in `workspace.toml`'s
+`[template]` block, and that template records every governed change to itself as
+a numbered changelog entry. Its `CHANGELOG.md` and `CONTRACT.md` are not
+materialised, so read both from the template repository; the
+`Replaying governed changes` section of `CONTRACT.md` holds the procedure, and
+an `applied` key records the newest entry this workspace has applied.
+
 ## The durability layer
 
 This repo holds the _record_ of the work, not the work: the plan, `STATE.md`,

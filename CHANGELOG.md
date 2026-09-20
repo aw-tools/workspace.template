@@ -82,6 +82,24 @@ scope.
 
 ## Entries
 
+### 5 — Point an instance at the template replay procedure
+
+- **Date:** 2026-09-20
+- **Template ref:** `doc/replay-pointer`
+- **Paths:** `AGENTS.md`
+- **Kind:** `adapt`
+- **Change:** A materialised workspace held no sign that this template records
+  governed changes, or that a procedure exists for applying them. The contract
+  and this changelog are deliberately not materialised, so an instance never
+  told to look here had no way to find out.
+- **Migration:**
+  1. Add a section to your `AGENTS.md` saying the template named in
+     `workspace.toml` holds the replay procedure in its `CONTRACT.md`, read from
+     the template repository rather than your tree. This template's wording is
+     the reference.
+- **Already applied when:** `AGENTS.md` names the replay procedure.
+- **Verify:** `grep -q 'Replaying governed changes' AGENTS.md` finds a line.
+
 ### 4 — Track template-only files
 
 - **Date:** 2026-09-18
