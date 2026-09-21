@@ -82,6 +82,27 @@ scope.
 
 ## Entries
 
+### 6 — Ignore the files tools drop into a tracked directory
+
+- **Date:** 2026-09-21
+- **Template ref:** `chore/ignore-tool-droppings`
+- **Paths:** `.gitignore`
+- **Kind:** `adapt`
+- **Change:** A `.DS_Store`, a swap file or a `.orig` from a conflicted merge
+  landed in a tracked directory and was tracked. The hard-exclusions block now
+  names that class. It lives here rather than in a personal global ignore file,
+  which a cold clone on another machine does not carry.
+- **Migration:**
+  1. Beneath `*.env` in the hard-exclusions block, add `.DS_Store`, `._*`,
+     `Thumbs.db`, `desktop.ini`, `*~`, `*.swp`, `.#*`, `*.orig` and `*.rej`,
+     untracking with `git rm --cached` any your workspace already holds.
+- **Already applied when:**
+  `printf '%s\n' .DS_Store ._x Thumbs.db desktop.ini 'x~' x.swp '.#x' x.orig x.rej | sed 's:^:context/:' | git check-ignore --stdin | wc -l`
+  prints 9. Fewer means a partial application.
+- **Verify:** `touch context/.DS_Store context/tmp.orig`, then
+  `git status --porcelain` lists neither; before the change it lists both.
+  Delete them afterwards.
+
 ### 5 — Point an instance at the template replay procedure
 
 - **Date:** 2026-09-20
