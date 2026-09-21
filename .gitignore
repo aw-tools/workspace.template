@@ -1,4 +1,4 @@
-# Inverted gitignore: deny everything, then whitelist the workspace layer.
+# Inverted gitignore: deny everything, then re-include the workspace layer.
 #
 # Inner repositories checked out into this workspace are swallowed by the
 # deny-all rule below. Git never descends into them, so they produce no gitlink
@@ -53,5 +53,23 @@
 tmp/**
 !tmp/.keep
 
-# Hard exclusions — last match wins, so these override every whitelist above.
+# Hard exclusions — last match wins. Whole directories are re-included above,
+# so anything a tool drops inside one is tracked unless named here.
+
+# Secrets.
 *.env
+
+# Operating-system droppings.
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+
+# Editor scratch.
+*~
+*.swp
+.#*
+
+# Merge and patch residue.
+*.orig
+*.rej
