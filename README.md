@@ -23,11 +23,12 @@ workspace remote.
 
 ## Day to day
 
-| Command     | Effect                                                     |
-| ----------- | ---------------------------------------------------------- |
-| `aw doctor` | Environment and remote-reachability checks with remedies   |
-| `aw status` | Per-repo state, config drift, skill-link health            |
-| `aw sync`   | Fetch and report only — never merges, pulls, or checks out |
+| Command           | Effect                                                               |
+| ----------------- | -------------------------------------------------------------------- |
+| `aw doctor`       | Environment and remote-reachability checks with remedies             |
+| `aw status`       | Per-repo state, config drift, skill-link health                      |
+| `aw sync`         | Fetch and report only — never merges, pulls, or checks out           |
+| `aw fast-forward` | Fetch, then fast-forward each clean repository on its default branch |
 
 ## See also
 
