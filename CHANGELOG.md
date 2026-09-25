@@ -82,6 +82,23 @@ scope.
 
 ## Entries
 
+### 7 — Point the bootstrap shim at the install guide
+
+- **Date:** 2026-09-25
+- **Template ref:** `fix/bootstrap-install-pointer`
+- **Paths:** `bin/bootstrap`
+- **Kind:** `replace`
+- **Change:** When `aw` was missing, `bin/bootstrap` said to build it from the
+  agentic-workspace repository, which is no longer how `aw` is installed. It now
+  links to the install section of the guide.
+- **Migration:**
+  1. Copy this template's `bin/bootstrap` over yours.
+- **Already applied when:** `grep -q 'install-the-tool' bin/bootstrap` finds a
+  line.
+- **Verify:** `PATH=/usr/bin:/bin bin/bootstrap` prints the guide's install link
+  and exits 1; before the change it names the agentic-workspace repository
+  instead.
+
 ### 6 — Ignore the files tools drop into a tracked directory
 
 - **Date:** 2026-09-21

@@ -1,6 +1,6 @@
 # Workspace manifest — the single source of truth for `aw`.
 #
-# Edit this file, then run `bin/bootstrap`.
+# Edit this file, then run `aw bootstrap`.
 
 [workspace]
 name = "CHANGEME"
