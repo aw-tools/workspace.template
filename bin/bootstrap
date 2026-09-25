@@ -4,7 +4,8 @@ set -eu
 
 if ! command -v aw >/dev/null 2>&1; then
 	echo "aw not found on PATH." >&2
-	echo "Build and install it from the agentic-workspace repo, then re-run." >&2
+	echo "Install it, then re-run:" >&2
+	echo "https://github.com/aw-tools/agentic-workspace/blob/main/guide/03-getting-started.md#install-the-tool" >&2
 	exit 1
 fi
 
