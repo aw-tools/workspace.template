@@ -14,7 +14,7 @@ constellation reassembles.
 ```sh
 aw init <codename>.workspace   # instantiate this template, git init (no commit)
 $EDITOR workspace.toml         # declare inner repos and skill opt-ins
-bin/bootstrap                  # clone repos, apply config, link skills, report
+aw bootstrap                   # clone repos, apply config, link skills, report
 ```
 
 The first commit is deliberately yours to make: review `git status --porcelain`
