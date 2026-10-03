@@ -1,0 +1,15 @@
+# Paths `aw lint` skips when checking artefact declarations, in gitignore
+# syntax. A basename matches at any depth; a leading slash anchors at the root.
+
+# Repository documents, not context artefacts.
+README.md
+AGENTS.md
+CLAUDE.md
+CONTRACT.md
+CHANGELOG.md
+CONTRIBUTING.md
+
+# Agent surfaces, whose markdown carries a foreign frontmatter schema.
+/.skills/
+/.claude/
+/.agents/
