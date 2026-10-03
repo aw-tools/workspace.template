@@ -26,9 +26,6 @@ jobs:
           curl -fsSL https://dprint.dev/install.sh | sh -s 0.55.2
           echo "$HOME/.dprint/bin" >> "$GITHUB_PATH"
 
-      # The latest stable release, not a pin: the template must pass the `aw`
-      # people install, so a release the template no longer satisfies turns
-      # this red. Release `aw` before a template change that depends on it.
       - name: Install aw
         run: |
           base=https://github.com/aw-tools/aw-cli/releases/latest/download
