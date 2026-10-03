@@ -26,14 +26,16 @@ jobs:
           curl -fsSL https://dprint.dev/install.sh | sh -s 0.55.2
           echo "$HOME/.dprint/bin" >> "$GITHUB_PATH"
 
+      # The latest stable release, not a pin: the template must pass the `aw`
+      # people install, so a release the template no longer satisfies turns
+      # this red. Release `aw` before a template change that depends on it.
       - name: Install aw
-        env:
-          AW_VERSION: 0.4.0
-          AW_SHA256: f34a54fb1448fa6681bd85687f09427233297af9ef0d6e447725086e5d7816a6
         run: |
-          curl -fsSLo aw.tar.gz "https://github.com/aw-tools/aw-cli/releases/download/v${AW_VERSION}/aw-x86_64-unknown-linux-musl.tar.gz"
-          echo "${AW_SHA256}  aw.tar.gz" | sha256sum -c -
-          tar -xzf aw.tar.gz -C /usr/local/bin ./aw
+          base=https://github.com/aw-tools/aw-cli/releases/latest/download
+          curl -fsSLO "$base/aw-x86_64-unknown-linux-musl.tar.gz" -O "$base/SHA256SUMS"
+          sha256sum -c SHA256SUMS --ignore-missing
+          tar -xzf aw-x86_64-unknown-linux-musl.tar.gz -C /usr/local/bin ./aw
+          aw --version
 
       - name: Check formatting
         run: dprint check
@@ -41,10 +43,9 @@ jobs:
       - name: Check shell scripts
         run: shellcheck bin/bootstrap bin/install-hooks bin/lint-changelog .githooks/pre-commit
 
-      # The template's own manifest carries no [template] block, so no
-      # `contract` for `aw lint` to read. Lint a workspace made from this
-      # checkout instead: it holds exactly what an instance receives. `aw init`
-      # commits nothing, and the lint checks tracked files only, so stage them.
+      # The template's manifest has no `contract`, so `aw lint` would refuse here.
+      # Lint a workspace made from this checkout instead; `aw init` commits nothing
+      # and the lint reads tracked files only, so stage them first.
       - name: Lint artefacts
         run: |
           aw init --template "$PWD" --trust-template "$RUNNER_TEMP/workspace"
