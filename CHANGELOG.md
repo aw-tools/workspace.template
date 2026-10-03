@@ -95,24 +95,32 @@ scope.
 - **Migration:**
   1. Install or upgrade `aw` to 0.4.0 or later.
   2. Copy this template's `.awlintignore` to your root and add `!.awlintignore`
-     to your `.gitignore` re-includes.
+     to your `.gitignore` re-includes. Stage both before anything else: a
+     commit's `aw lint` reads `.awlintignore` from what is staged, not from
+     disk, so a migration spread over several commits needs it staged in the
+     first.
   3. Add `contract = 1` to your `[template]` block unless it has a `contract`
      key.
-  4. In `.githooks/pre-commit`, replace the `bin/lint-artefacts` step with this
+  4. Delete every ephemeral artefact whose status is `graduated` or `expired`.
+     In the commit that deletes a graduated one, change a standing, binding or
+     episodic artefact, such as a ledger, to hold its residue. `aw lint` fails a
+     commit on either; `bin/lint-artefacts` checked neither.
+  5. In `.githooks/pre-commit`, replace the `bin/lint-artefacts` step with this
      template's `aw lint` steps.
-  5. Name `aw lint` where `AGENTS.md`, `context/artefacts.md`,
+  6. Name `aw lint` where `AGENTS.md`, `context/artefacts.md`,
      `context/artefacts.toml` and the header of `context/STATE.md` name
      `bin/lint-artefacts`.
-  6. Delete `bin/lint-artefacts`.
+  7. Delete `bin/lint-artefacts`.
 - **Already applied when:** `git ls-files --error-unmatch .awlintignore`
   succeeds, `grep -Eq '^[[:space:]]*contract[[:space:]]*=' workspace.toml`
   matches and `bin/lint-artefacts` is gone.
 - **Verify:** `aw lint --all` exits 0 and
   `grep -qx 'contract = 1' workspace.toml` matches; before the change
   `aw lint --all` exits 2.
-- **If your copy has diverged:** `aw lint` carries only this template's checks.
-  Move any path your script skipped into `.awlintignore`, and raise any check
-  you added with the human before deleting the script.
+- **If your copy has diverged:** `aw lint` carries this template's checks, step
+  4's two among them, and no others. Move any path your script skipped into
+  `.awlintignore`, and raise any check you added with the human before deleting
+  the script.
 
 ### 7 — Point the bootstrap shim at the install guide
 
