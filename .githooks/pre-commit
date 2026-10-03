@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# Pre-commit hook: verify formatting with dprint, then lint artefact
-# frontmatter against the registry (context/artefacts.toml).
+# Pre-commit hook: verify formatting with dprint, then lint artefacts against
+# the registry (context/artefacts.toml) with `aw lint`.
 # Activate with: bin/install-hooks
 
 if ! command -v dprint >/dev/null 2>&1; then
@@ -15,8 +15,16 @@ if ! dprint check; then
     exit 1
 fi
 
-if ! bin/lint-artefacts; then
+# Probe for the verb rather than compare versions: an aw without it exits
+# non-zero here, so the commit is blocked either way.
+if ! aw lint --help >/dev/null 2>&1; then
+    echo "error: aw 0.4.0 or later is needed for 'aw lint'. Install or upgrade it:"
+    echo "https://github.com/aw-tools/agentic-workspace/blob/main/guide/03-getting-started.md#install-the-tool"
+    exit 1
+fi
+
+if ! aw lint; then
     echo ""
-    echo "Artefact lint failed. Fix the frontmatter per context/artefacts.toml."
+    echo "Artefact lint failed; see aw's output above."
     exit 1
 fi

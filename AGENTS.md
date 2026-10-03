@@ -94,9 +94,9 @@ part of the work, not a report written afterwards.
   `activity`) holds one roll-up line instead of an item; a no-topic subject
   takes the `item-` prefix, whose slug is a permanent address; the mandatory
   `## Next` list points at up to eight item slugs. Every cap reads from the
-  registry's `[state]` table. `bin/lint-artefacts` enforces all of it, and
-  closing an engagement deletes its item or roll-up line in the closing commit,
-  residue routed first.
+  registry's `[state]` table. `aw lint` enforces all of it, and closing an
+  engagement deletes its item or roll-up line in the closing commit, residue
+  routed first.
 
 ## Working agreements
 
@@ -111,7 +111,7 @@ part of the work, not a report written afterwards.
 
 The context corpus is governed by the artefact model: `context/artefacts.toml`
 is the registry (authority), `context/artefacts.md` holds kind purposes and
-templates, `bin/lint-artefacts` enforces both at commit time.
+templates, `aw lint` enforces both at commit time.
 
 - Every context artefact declares `kind` and `status` in frontmatter; legal
   values come from the registry. Class is implied by kind, never declared.
@@ -144,7 +144,7 @@ templates, `bin/lint-artefacts` enforces both at commit time.
   deliberate "none", absence is an error. A thread leaves its engagement when it
   acquires a plan, spec, deliverable or external counterpart of its own, and the
   spin-off derives its own remits rather than inheriting the parent's.
-  `bin/lint-artefacts --remits` lists engagements by remit.
+  `aw lint --remits` lists engagements by remit.
 
 ## Formatting
 

@@ -11,9 +11,11 @@ After cloning, `aw init` checks for:
   the workspace layer;
 - a `workspace.toml` manifest.
 
-Initialisation fails loudly when either requirement is missing. A
-contract-version marker is reserved for a later revision; its representation and
-enforcement are deliberately deferred.
+Initialisation fails loudly when either requirement is missing. It then records
+the contract revision the instance conforms to as `contract`, under
+[Recorded provenance](#recorded-provenance) below, and `aw lint` refuses to
+check a workspace whose manifest lacks it or names a revision that `aw` does not
+implement.
 
 ## Expected instance layer
 
@@ -34,8 +36,9 @@ The rest of the starting layer is guidance rather than an enforced file list:
 This template also ships the artefact-governance layer, so a materialised
 workspace is governed from birth:
 
-- `bin/lint-artefacts` and its pre-commit step, enforcing the model at commit
-  time;
+- the pre-commit step calling `aw lint`, enforcing the model at commit time;
+- `.awlintignore`, the paths `aw lint` skips when checking artefact
+  declarations, in gitignore syntax; with no file, nothing is skipped;
 - `context/artefacts.toml` (registry, empty engagement register) and
   `context/artefacts.md` (prose companion);
 - register skeletons `context/STATE.md`, `DECISIONS.md`, `FINDINGS.md`, and
@@ -65,6 +68,7 @@ the template does not ship this block:
 url = "<template URL>"
 ref = "<ref as typed>"
 sha = "<resolved commit SHA>"
+contract = 1
 applied = <entry id>  # not written by aw init today; see below
 ```
 
@@ -78,8 +82,10 @@ replays, and an instance whose block carries no `applied` key falls back to the
 baseline derived from `sha`, under
 [Replaying governed changes](#replaying-governed-changes) below.
 
-The block reserves a future `contract` field. Its representation is not yet
-defined.
+`contract` is the revision of the conformance suite the instance conforms to, as
+a plain TOML integer; `aw init` writes the revision its `aw` implements, `1`
+today. A workspace built by hand, with no provenance to record, may carry a
+`[template]` block holding `contract` alone.
 
 ## Template references
 

@@ -7,9 +7,9 @@ status: live
 
 The machine authority is `context/artefacts.toml`: classes, their status
 machines, and each kind's class, home, and naming scheme live **there**, read by
-`bin/lint-artefacts` at commit time. This file carries what data cannot: purpose
-per kind and the templates. It references the data file and never embeds a copy
-of it — one authority, no drift.
+`aw lint` at commit time. This file carries what data cannot: purpose per kind
+and the templates. It references the data file and never embeds a copy of it —
+one authority, no drift.
 
 The corpus is topic-first: standing and binding artefacts sit directly in the
 root of `context/` under uppercase names; everything episodic and ephemeral
@@ -91,7 +91,7 @@ is not a primary remit. With no declared vocabulary, the lint's first-appearance
 notice is the only drift guard — it prints on stderr the first time a value
 enters the register, and never blocks.
 
-`bin/lint-artefacts --remits [<remit>]` lists the register keyed by remit, one
+`aw lint --remits [<remit>]` lists the register keyed by remit, one
 tab-separated line per pair. `STATE.md` is deliberately not a surface for
 remits: it is the handover, not an index.
 
@@ -128,11 +128,11 @@ open engagement.
 An engagement's directory location follows its registry status, never the other
 way round. An **open** engagement lives at `context/engagements/<name>/`; once
 its status turns **closed**, the directory moves to `context/archive/<name>/` in
-the same commit that closes its episodic artefacts. `bin/lint-artefacts`
-enforces both directions: an open engagement found under `context/archive/`, or
-a closed one still under `context/engagements/`, is a finding. Archiving is not
-mandatory — a closed engagement whose ephemera all graduated by deletion is free
-to have no directory at all, exactly as before.
+the same commit that closes its episodic artefacts. `aw lint` enforces both
+directions: an open engagement found under `context/archive/`, or a closed one
+still under `context/engagements/`, is a finding. Archiving is not mandatory — a
+closed engagement whose ephemera all graduated by deletion is free to have no
+directory at all, exactly as before.
 
 ## Non-entity directories
 
@@ -335,8 +335,8 @@ status: open
 ### state — open-item entry
 
 `STATE.md` is a maintained singleton, but each entry under its `## Open items`
-section has a fixed shape, enforced by `bin/lint-artefacts` against the caps in
-the registry's `[state]` table (`max_items`, `field_tokens`, `rollup_tokens`,
+section has a fixed shape, enforced by `aw lint` against the caps in the
+registry's `[state]` table (`max_items`, `field_tokens`, `rollup_tokens`,
 `next_entries`, `stale_days`; defaults 12, 50, 25, 8, 30):
 
 ```markdown

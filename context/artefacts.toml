@@ -1,6 +1,6 @@
 # Artefact registry — machine authority.
 #
-# Read by bin/lint-artefacts. The prose companion (purpose per kind, templates)
+# Read by `aw lint`. The prose companion (purpose per kind, templates)
 # is artefacts.md. This file is the single source of truth for classes, their
 # status machines, the kind -> class / home / naming mapping, and the engagement
 # register. The prose file references it and never embeds a copy.

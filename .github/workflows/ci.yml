@@ -26,14 +26,31 @@ jobs:
           curl -fsSL https://dprint.dev/install.sh | sh -s 0.55.2
           echo "$HOME/.dprint/bin" >> "$GITHUB_PATH"
 
+      - name: Install aw
+        env:
+          AW_VERSION: 0.4.0-rc.1
+          AW_SHA256: 3f8975fa6fbf66bbc3cfc781ca4a55b8eb6d77df6dabee0f2f4e8c8facfe840c
+        run: |
+          curl -fsSLo aw.tar.gz "https://github.com/aw-tools/aw-cli/releases/download/v${AW_VERSION}/aw-x86_64-unknown-linux-musl.tar.gz"
+          echo "${AW_SHA256}  aw.tar.gz" | sha256sum -c -
+          tar -xzf aw.tar.gz -C /usr/local/bin ./aw
+
       - name: Check formatting
         run: dprint check
 
       - name: Check shell scripts
-        run: shellcheck bin/bootstrap bin/install-hooks bin/lint-artefacts bin/lint-changelog .githooks/pre-commit
+        run: shellcheck bin/bootstrap bin/install-hooks bin/lint-changelog .githooks/pre-commit
 
+      # The template's own manifest carries no [template] block, so no
+      # `contract` for `aw lint` to read. Lint a workspace made from this
+      # checkout instead: it holds exactly what an instance receives. `aw init`
+      # commits nothing, and the lint checks tracked files only, so stage them.
       - name: Lint artefacts
-        run: bin/lint-artefacts --all
+        run: |
+          aw init --template "$PWD" --trust-template "$RUNNER_TEMP/workspace"
+          cd "$RUNNER_TEMP/workspace"
+          git add -A
+          aw lint --all
 
       # Continuous integration is the only place this runs. The pre-commit hook
       # is seeded into every instance, so a call from there would guard a script

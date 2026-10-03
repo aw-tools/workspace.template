@@ -72,8 +72,8 @@ order:
 - `Already applied when` — the skip test: an observable condition or a command,
   so replay is idempotent and a half-applied instance can tell where it stopped.
 - `Verify` — a check that fails before the entry is applied and passes after.
-  Name `bin/lint-artefacts` only where the lint actually enforces this change;
-  otherwise state what to look for.
+  Name `aw lint` only where the lint actually enforces this change; otherwise
+  state what to look for.
 - `If your copy has diverged` — present only for files instances commonly edit;
   states what to preserve and what must change regardless.
 
@@ -81,6 +81,38 @@ An entry says how to apply a change, never how to undo one; reversal is out of
 scope.
 
 ## Entries
+
+### 8 — Lint artefacts with `aw lint`
+
+- **Date:** 2026-10-03
+- **Template ref:** `feat/aw-lint`
+- **Paths:** `.awlintignore`, `.gitignore`, `.githooks/pre-commit`,
+  `bin/lint-artefacts`, `AGENTS.md`, `context/artefacts.md`,
+  `context/artefacts.toml`
+- **Kind:** `adapt`
+- **Change:** `aw lint`, in `aw` 0.4.0, replaces `bin/lint-artefacts`. The paths
+  it skips live in `.awlintignore`, and it needs `contract` in `workspace.toml`.
+- **Migration:**
+  1. Install or upgrade `aw` to 0.4.0 or later.
+  2. Copy this template's `.awlintignore` to your root and add `!.awlintignore`
+     to your `.gitignore` re-includes.
+  3. Add `contract = 1` to your `[template]` block unless it has a `contract`
+     key.
+  4. In `.githooks/pre-commit`, replace the `bin/lint-artefacts` step with this
+     template's `aw lint` steps.
+  5. Name `aw lint` where `AGENTS.md`, `context/artefacts.md`,
+     `context/artefacts.toml` and the header of `context/STATE.md` name
+     `bin/lint-artefacts`.
+  6. Delete `bin/lint-artefacts`.
+- **Already applied when:** `git ls-files --error-unmatch .awlintignore`
+  succeeds, `grep -Eq '^[[:space:]]*contract[[:space:]]*=' workspace.toml`
+  matches and `bin/lint-artefacts` is gone.
+- **Verify:** `aw lint --all` exits 0 and
+  `grep -qx 'contract = 1' workspace.toml` matches; before the change
+  `aw lint --all` exits 2.
+- **If your copy has diverged:** `aw lint` carries only this template's checks.
+  Move any path your script skipped into `.awlintignore`, and raise any check
+  you added with the human before deleting the script.
 
 ### 7 — Point the bootstrap shim at the install guide
 
