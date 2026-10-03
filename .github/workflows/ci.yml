@@ -28,8 +28,8 @@ jobs:
 
       - name: Install aw
         env:
-          AW_VERSION: 0.4.0-rc.1
-          AW_SHA256: 3f8975fa6fbf66bbc3cfc781ca4a55b8eb6d77df6dabee0f2f4e8c8facfe840c
+          AW_VERSION: 0.4.0
+          AW_SHA256: f34a54fb1448fa6681bd85687f09427233297af9ef0d6e447725086e5d7816a6
         run: |
           curl -fsSLo aw.tar.gz "https://github.com/aw-tools/aw-cli/releases/download/v${AW_VERSION}/aw-x86_64-unknown-linux-musl.tar.gz"
           echo "${AW_SHA256}  aw.tar.gz" | sha256sum -c -
