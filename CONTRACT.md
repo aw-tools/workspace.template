@@ -9,9 +9,10 @@ After cloning, `aw init` checks for:
 
 - a deny-all `.gitignore`, which ignores everything before selectively allowing
   the workspace layer;
-- a `workspace.toml` manifest.
+- a `workspace.toml` manifest with `name = "CHANGEME"` under `[workspace]`, a
+  placeholder `aw init` replaces with the new workspace's name.
 
-Initialisation fails loudly when either requirement is missing. It then records
+Initialisation fails loudly when either requirement is not met. It then records
 the contract revision the instance conforms to as `contract`, under
 [Recorded provenance](#recorded-provenance) below, and `aw lint` refuses to
 check a workspace whose manifest lacks it or names a revision that `aw` does not
