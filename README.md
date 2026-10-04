@@ -18,8 +18,8 @@ aw bootstrap                   # clone repos, apply config, link skills, report
 ```
 
 The first commit is deliberately yours to make: review `git status --porcelain`
-and `git ls-files` before it, because everything tracked here reaches the
-workspace remote.
+and `git ls-files` before it, because everything tracked here reaches any remote
+you add.
 
 ## Day to day
 
