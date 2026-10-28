@@ -26,7 +26,8 @@ The rest of the starting layer is guidance rather than an enforced file list:
   dispatched worker may use the dedicated file tools in the checkout it was
   given. Left on, the guard refuses `Write` and `Edit` while leaving shell
   writes untouched, which costs a worker its safest editing tools without
-  containing anything;
+  containing anything. It also switches off Claude Code's memory, which
+  `aw doctor` reports when left on;
 - `AGENTS.md`, with `CLAUDE.md` as a symlink to it;
 - `README.md`;
 - `bin/bootstrap`;

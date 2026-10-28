@@ -1,4 +1,5 @@
 {
+  "autoMemoryEnabled": false,
   "worktree": {
     "bgIsolation": "none"
   }

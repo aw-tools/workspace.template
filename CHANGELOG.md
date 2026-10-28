@@ -82,6 +82,30 @@ scope.
 
 ## Entries
 
+### 9 — Ban agent memory
+
+- **Date:** 2026-10-28
+- **Template ref:** `feat/agent-memory-off`
+- **Paths:** `.claude/settings.json`, `AGENTS.md`
+- **Kind:** `adapt`
+- **Change:** An agent that keeps a private memory holds it on one machine,
+  unversioned, and loads it into every session as if it were a rule. The
+  workspace layer is the only durable record, so `AGENTS.md` forbids using agent
+  memory. Where an agent has a switch, the template sets it: today that is
+  Claude Code's, in `.claude/settings.json`, and `aw` warns when that file does
+  not switch it off.
+- **Migration:**
+  1. Install or upgrade `aw` to 0.6.0 or later.
+  2. Add the rule to `AGENTS.md`; this template's wording is the reference.
+  3. If you keep a `.claude/settings.json`, set `"autoMemoryEnabled": false` in
+     it, keeping your other keys.
+- **Already applied when:** `aw --version` reports 0.6.0 or later, `aw doctor`
+  prints no `agent memory` line, and `AGENTS.md` carries the rule.
+- **Verify:** the condition under `Already applied when` holds. Before the
+  change it fails on every instance: `AGENTS.md` lacks the rule, and where
+  `.claude/settings.json` exists without the key, `aw doctor` also prints the
+  `agent memory` warning.
+
 ### 8 — Lint artefacts with `aw lint`
 
 - **Date:** 2026-10-03
