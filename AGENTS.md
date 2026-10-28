@@ -106,6 +106,10 @@ part of the work, not a report written afterwards.
 - Commit inner-repo work inside the repo, never from the workspace repo.
 - Secrets never enter `context/` or any tracked file; throwaway files go in
   `tmp/`.
+- **Never use an agent's own memory.** Where an agent keeps one, it lives on one
+  machine and in one tool, unversioned and unreviewed, so it bypasses everything
+  this workspace makes durable and portable. A standing rule goes in this file,
+  a fact or a decision in `context/`.
 
 ## Artefact invariants
 
