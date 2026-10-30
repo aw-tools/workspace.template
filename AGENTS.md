@@ -102,6 +102,14 @@ part of the work, not a report written afterwards.
 
 - When a discovery conflicts with a settled decision or the plan, stop and raise
   it as a decision gate with evidence — do not decide unilaterally.
+- **A decision enters the register only once the human confirms it.** Before
+  adding an entry to `context/DECISIONS.md`, show the human the entry as it
+  would stand and say in one line why it meets the tests in
+  `context/artefacts.md`. Enter it only on the human's explicit confirmation,
+  given however the session allows; choosing between options is not that
+  confirmation. Until then it stays a draft in the owning ledger, or in
+  `NOTES.md` without one. If the human sends it elsewhere, such as the plan, an
+  instruction file or a finding, put it there instead.
 - Explanations on request are plain, low on jargon, no metaphors.
 - Commit inner-repo work inside the repo, never from the workspace repo.
 - Secrets never enter `context/` or any tracked file; throwaway files go in
@@ -154,8 +162,8 @@ templates, `aw lint` enforces both at commit time.
 
 The workspace layer is formatted by dprint to `.editorconfig` + `dprint.json`;
 the inverted `.gitignore` scopes it to the layer, so inner repos are untouched.
-A pre-commit hook enforces it — activate once per checkout with
-`bin/install-hooks`.
+A pre-commit hook enforces it — `aw bootstrap` activates the hook once per
+checkout, and `bin/install-hooks` does the same where `aw` is not installed.
 
 The hook is **mandatory and must never be bypassed**: no `--no-verify`, no
 unformatted commits. If it blocks, run `dprint fmt` and re-commit.
