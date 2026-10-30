@@ -25,8 +25,10 @@ lives one topic directory below, in `context/engagements/<topic>/`, named
   notes, this file. Rewritten in place as understanding changes.
 - **decision** — a numbered, binding ruling with rationale, in the single
   append-only register `DECISIONS.md`. Entry discipline: the ruling, the
-  load-bearing rationale, one line per rejected alternative — thirty lines or
-  fewer; evidence is referenced, never embedded.
+  load-bearing rationale, one line per alternative set aside, which stays open —
+  thirty lines or fewer; evidence is referenced, never embedded.
+  `Decision discipline` below says when a ruling becomes an entry and how a
+  later entry changes it.
 - **spec** — what and why, with acceptance criteria, before implementation.
   Authority ends at its application's exit gate.
 - **plan** — units, dependencies, sequencing for a multi-unit effort. Same fate
@@ -39,6 +41,85 @@ lives one topic directory below, in `context/engagements/<topic>/`, named
   decision, what is deferred or blocked.
 - **probe** — a ground-truth investigation: verdict, findings, what needs a
   human decision. Same lifecycle as a report.
+
+## Decision discipline
+
+A ruling still being argued is drafted in the owning engagement's ledger, or in
+`NOTES.md` when there is none. It enters `DECISIONS.md` once its question
+settles and the human confirms it. At wrap-up, put each settled draft to the
+human; a draft whose question is still open, such as one awaiting a longer
+investigation, stays a draft without asking.
+
+A ruling is decision-worthy when all four tests hold:
+
+- there is a real choice between alternatives;
+- it binds work beyond the plan, engagement or conversation that raised it;
+- a later session would otherwise redo or reverse it unknowingly;
+- its reason is recoverable from no other record.
+
+Otherwise it goes elsewhere: a fact to `FINDINGS.md`, a rule of conduct to an
+instruction file, a detail of carrying out a ruling to the plan, a reversible
+local choice to the commit message. The plan is rewritten in place; a detail
+that outlives it is promoted to a decision at the plan's exit.
+
+A lasting entry answers the question rather than its current implementation,
+says what would have to change for it to be revisited, and names what was set
+aside and why, each under a `**Set aside:**` label. An alternative set aside
+stays open: a genuine later override is a new entry, linked to the one it
+changes by the marks below.
+
+This guards against two failure modes:
+
+- **Ratcheting.** A ruling entered while still argued can only grow a chain of
+  superseding entries, because the register is append-only.
+- **Plan details entered as decisions.** A detail the plan would rewrite in
+  place becomes an entry that only a superseding entry can change.
+
+### Supersession marks
+
+A later entry M that changes an earlier entry N, wholly or in part, carries
+`**Supersedes:** N.`, and N gains `**Superseded by:** M.`. The second mark tells
+a reader of N that M changes it and must be read before relying on N. One form
+covers a replacement, a narrowing, a partial override and a change to a single
+bullet, and a mark may name several entries. The marks record how entries
+relate, so they may be added to any entry, old or new; an entry's ruling,
+rationale and alternatives stay as recorded.
+
+`aw lint` reads the register in one form:
+
+- An entry is a top-level numbered list item, identified by the number written
+  before it. A bold title opening its text is optional, and is read only for the
+  entry's date: the first `YYYY-MM-DD` in it. Anything inside an entry, a list
+  included, is indented under its text.
+- A mark is its bold label, then entry numbers separated by commas, then a full
+  stop.
+
+```markdown
+1. **Release weekly (2026-10-01).** **Superseded by:** 2. <ruling and reasons>
+2. **Release fortnightly (2026-10-28).** **Supersedes:** 1. <ruling and reasons>
+```
+
+The lint checks the marks once `workspace.toml` lists `supersession-marks` in
+`proposals` in its `[template]` block. A `Superseded by` mark without the
+matching `Supersedes` mark fails, and the reverse; a `Supersedes` mark naming
+its own entry or a later one fails; a commit adding an entry that supersedes one
+of the same date warns, since two sessions may have ruled in parallel. The
+checks test that marks agree, not that every supersession is marked: an unmarked
+contradiction passes. A register with no marks, or only legacy `SUPERSEDED by N`
+prose, produces no finding. Without the opt-in, the append-only check reads a
+mark added anywhere but the end of the register as a rewrite, and fails it as
+`binding-rewritten`.
+
+With the opt-in, the register's form can change, such as headings turned into
+the entries above or a label renamed in every entry, in a declared format
+change: a commit of its own that adds `reformatted` to the register's
+frontmatter or changes its value, a date for instance. Every recorded entry
+keeps its number and its place, every entry a mark names stays named, and the
+commit adds no entry. `aw lint` compares no words: it fails a lost entry, a
+dropped mark or an added entry, but does not check the order of entries. It
+reports the changes of wording, grouped, warning of one confined to one or two
+entries. Give the human your reading of each warning, and commit only after
+their yes.
 
 ## Routing — the subject owns the record
 

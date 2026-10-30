@@ -68,9 +68,10 @@ the template does not ship this block:
 ```toml
 [template]
 url = "<template URL>"
-ref = "<ref as typed>"
+ref = "<ref as typed, the tag aw chose, or empty for a local path>"
 sha = "<resolved commit SHA>"
 contract = 1
+proposals = ["<proposal>"]  # only when the template declares them; see below
 applied = <entry id>  # not written by aw init today; see below
 ```
 
@@ -89,14 +90,29 @@ a plain TOML integer; `aw init` writes the revision its `aw` implements, `1`
 today. A workspace built by hand, with no provenance to record, may carry a
 `[template]` block holding `contract` alone.
 
+`proposals` lists the contract proposals the instance opts into, which `aw lint`
+applies on top of the `contract` revision. A template declares them as a
+top-level key above its first table, and `aw init` moves that line into the
+block it writes; a template declaring none gets no `proposals` line. `aw init`
+refuses a template whose `proposals` is not a list of proposal names it knows.
+This template declares `supersession-marks`.
+
 ## Template references
 
 `--template <url>@<ref>` accepts a tag, commit SHA, or branch. The `ref` value
 is recorded as typed, and `sha` records the commit it resolved to.
 
-A bare URL resolves to the remote's default-branch `HEAD`, with the resolved
-commit recorded in `sha`. The template baked into `aw` is pinned to a tag rather
-than following a moving branch.
+A remote URL with no ref, `aw`'s default template included, seeds from the
+template's highest `vMAJOR.MINOR.PATCH` tag, compared numerically: the leading
+`v` is required, each part is a plain number without leading zeros, and a tag
+with a pre-release or build suffix never qualifies. `ref` records the tag
+chosen. A remote carrying no such tag is refused, and must be pinned with
+`@<ref>`. A workspace whose `[template]` block already records the same source
+seeds from its recorded `ref` instead, so a repeat `aw init` does not move to a
+newer release.
+
+A local path with no ref seeds from the commit its checkout holds, uncommitted
+changes excluded, and records an empty `ref`.
 
 ## Replaying governed changes
 
