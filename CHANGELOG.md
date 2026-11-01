@@ -82,6 +82,83 @@ scope.
 
 ## Entries
 
+### 11 — Name `aw bootstrap` as the way to activate the hook
+
+- **Date:** 2026-10-30
+- **Template ref:** `feat/decision-register-discipline`
+- **Paths:** `AGENTS.md`
+- **Kind:** `adapt`
+- **Change:** `AGENTS.md` told an instance to activate the pre-commit hook with
+  `bin/install-hooks`, although `aw bootstrap` already does it, setting
+  `core.hooksPath` to `.githooks` when that is unset. The Formatting section now
+  names `aw bootstrap`, and keeps `bin/install-hooks` for a checkout without
+  `aw`.
+- **Migration:**
+  1. In the Formatting section of your `AGENTS.md`, make the sentence naming
+     `bin/install-hooks` say, in that one sentence, that `aw bootstrap`
+     activates the hook and that `bin/install-hooks` does the same where `aw` is
+     not installed. If no sentence there names `bin/install-hooks`, add this
+     template's. This template's wording is the reference.
+- **Already applied when:**
+  `awk '/^## /{f=($0=="## Formatting")} f{s=s" "$0} END{n=split(s,a,/\. /); for(i=1;i<=n;i++) if(a[i]~/bin\/install-hooks/ && a[i]~/aw bootstrap/) e=1; exit !e}' AGENTS.md`
+  exits 0: one sentence of the Formatting section names both.
+- **Verify:** the condition under `Already applied when` holds. Before the
+  change it fails, because the sentence naming `bin/install-hooks` does not name
+  `aw bootstrap`.
+
+### 10 — Mark superseded decisions, enter decisions once settled
+
+- **Date:** 2026-10-30
+- **Template ref:** `feat/decision-register-discipline`
+- **Paths:** `AGENTS.md`, `context/artefacts.md`
+- **Kind:** `adapt`
+- **Change:** A reader reaching a superseded decision first saw nothing saying a
+  later one changed it, and a ruling entered while still argued could only be
+  corrected by more entries. Workspaces opt into the `supersession-marks`
+  contract proposal: both entries carry a mark naming the other, and `aw lint`
+  checks that the marks agree. `context/artefacts.md` states the entry form, the
+  marks and when a ruling becomes an entry; `AGENTS.md` has the human confirm
+  each entry first.
+- **Migration:**
+  1. Install or upgrade `aw` to 0.7.0 or later. An older `aw` fails or refuses
+     commits the steps below make.
+  2. Add the `Decision discipline` section, its `### Supersession marks`
+     subsection included, to your `context/artefacts.md` after `Kinds`. In the
+     `decision` kind, replace `one line per rejected alternative` with
+     `one line per alternative set aside, which stays open`, and add the
+     sentence pointing to `Decision discipline`. This template's wording is the
+     reference.
+  3. Add the bullet that a decision enters the register only once the human
+     confirms it to the working agreements in your `AGENTS.md`, taking this
+     template's wording as it stands.
+  4. In one commit, add `proposals = ["supersession-marks"]` to your
+     `[template]` block after `contract`, and mark both sides wherever one
+     entry's prose says it changes another, wholly or in part. Replace each
+     legacy `SUPERSEDED by N` with `**Superseded by:** N.`, keeping its numbers,
+     and give entry N the matching mark. A register with no supersessions takes
+     the opt-in alone.
+  5. In a later commit, bring the header of your `context/DECISIONS.md` in line
+     with this template's, which states the entry form and the marks. Once the
+     register holds an entry, the opt-in lets its header change; a register
+     holding none changes it in a declared format change, as
+     `context/artefacts.md` describes.
+- **Already applied when:**
+  `awk '/^\[/ { t = ($0 == "[template]") } t && /^[[:space:]]*proposals[[:space:]]*=.*"supersession-marks"/ { f = 1 } END { exit !f }' workspace.toml`
+  exits 0, `grep -q 'only once the human confirms it' AGENTS.md` and
+  `grep -q '^## Decision discipline' context/artefacts.md` find a line, and
+  `tr -s '[:space:]' ' ' < context/DECISIONS.md | grep -q 'top-level numbered list item'`
+  succeeds.
+- **Verify:** the condition under `Already applied when` holds, and
+  `aw lint --all` exits 0, which under the opt-in means every mark agrees with
+  its counterpart. Before the change the condition fails.
+- **If your copy has diverged:** a register whose entries are headings, or use
+  older labels such as `**Rejected:**` for `**Set aside:**`, converts after step
+  4 in a declared format change, per `context/artefacts.md`. Headings take step
+  4's opt-in alone; their marks and step 5 follow the conversion. On any
+  warning, commit only after the human's yes to your reading of each. A
+  heading-form register holding a numbered list at the left margin, outside any
+  bullet, cannot convert under `aw` 0.7.0: stop and tell the human.
+
 ### 9 — Ban agent memory
 
 - **Date:** 2026-10-28
