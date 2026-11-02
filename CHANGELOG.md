@@ -156,8 +156,8 @@ scope.
   4 in a declared format change, per `context/artefacts.md`. Headings take step
   4's opt-in alone; their marks and step 5 follow the conversion. On any
   warning, commit only after the human's yes to your reading of each. A
-  heading-form register holding a numbered list at the left margin, outside any
-  bullet, cannot convert under `aw` 0.7.0: stop and tell the human.
+  `## N. Title` register needs `aw` 0.7.1 or later to convert. A suffixed id
+  (`80a`) has no list form: stop and tell the human.
 
 ### 9 — Ban agent memory
 
